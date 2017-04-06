@@ -21,7 +21,7 @@ package org.b3log.symphony.model;
  * This class defines all notification model relevant keys.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.11.0.2, Jan 18, 2017
+ * @version 1.15.0.2, Mar 12, 2017
  * @since 0.2.5
  */
 public final class Notification {
@@ -167,6 +167,41 @@ public final class Notification {
      */
     public static final int DATA_TYPE_C_FOLLOWING_ARTICLE_COMMENT = 21;
 
+    /**
+     * Data type - point - perfect article.
+     */
+    public static final int DATA_TYPE_C_POINT_PERFECT_ARTICLE = 22;
+
+    /**
+     * Data type - article new follower.
+     */
+    public static final int DATA_TYPE_C_ARTICLE_NEW_FOLLOWER = 23;
+
+    /**
+     * Data type - article new watcher.
+     */
+    public static final int DATA_TYPE_C_ARTICLE_NEW_WATCHER = 24;
+
+    /**
+     * Data type - comment vote up.
+     */
+    public static final int DATA_TYPE_C_COMMENT_VOTE_UP = 25;
+
+    /**
+     * Data type - comment vote down.
+     */
+    public static final int DATA_TYPE_C_COMMENT_VOTE_DOWN = 26;
+
+    /**
+     * Data type - article vote up.
+     */
+    public static final int DATA_TYPE_C_ARTICLE_VOTE_UP = 27;
+
+    /**
+     * Data type - article vote down.
+     */
+    public static final int DATA_TYPE_C_ARTICLE_VOTE_DOWN = 28;
+
     //// Transient ////
     /**
      * Key of unread notification count.
@@ -177,6 +212,11 @@ public final class Notification {
      * Key of at in article.
      */
     public static final String NOTIFICATION_T_AT_IN_ARTICLE = "atInArticle";
+
+    /**
+     * Key of is comment.
+     */
+    public static final String NOTIFICATION_T_IS_COMMENT = "isComment";
 
     /**
      * Private constructor.

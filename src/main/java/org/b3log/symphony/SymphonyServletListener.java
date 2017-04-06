@@ -63,7 +63,7 @@ import java.util.Locale;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author Bill Ho
- * @version 3.17.9.29, Jan 14, 2017
+ * @version 3.18.9.32, Mar 26, 2017
  * @since 0.2.0
  */
 public final class SymphonyServletListener extends AbstractServletListener {
@@ -71,7 +71,7 @@ public final class SymphonyServletListener extends AbstractServletListener {
     /**
      * Symphony version.
      */
-    public static final String VERSION = "1.9.0";
+    public static final String VERSION = "2.0.0";
     /**
      * JSONO print indent factor.
      */
@@ -108,8 +108,11 @@ public final class SymphonyServletListener extends AbstractServletListener {
         eventManager.registerListener(new CommentSender()); // Not a bean
         eventManager.registerListener(new org.b3log.symphony.event.other.CommentSender()); // Not a bean
 
-        final ArticleNotifier articleNotifier = beanManager.getReference(ArticleNotifier.class);
-        eventManager.registerListener(articleNotifier);
+        final ArticleAddNotifier articleAddNotifier = beanManager.getReference(ArticleAddNotifier.class);
+        eventManager.registerListener(articleAddNotifier);
+
+        final ArticleUpdateNotifier articleUpdateNotifier = beanManager.getReference(ArticleUpdateNotifier.class);
+        eventManager.registerListener(articleUpdateNotifier);
 
         final ArticleBaiduSender articleBaiduSender = beanManager.getReference(ArticleBaiduSender.class);
         eventManager.registerListener(articleBaiduSender);
@@ -125,6 +128,12 @@ public final class SymphonyServletListener extends AbstractServletListener {
 
         final ArticleSearchUpdater articleSearchUpdater = beanManager.getReference(ArticleSearchUpdater.class);
         eventManager.registerListener(articleSearchUpdater);
+
+        final ArticleAddAudioHandler articleAddAudioHandler = beanManager.getReference(ArticleAddAudioHandler.class);
+        eventManager.registerListener(articleAddAudioHandler);
+
+        final ArticleUpdateAudioHandler articleUpdateAudioHandler = beanManager.getReference(ArticleUpdateAudioHandler.class);
+        eventManager.registerListener(articleUpdateAudioHandler);
 
         final TagCache tagCache = beanManager.getReference(TagCache.class);
         tagCache.loadTags();
@@ -193,7 +202,8 @@ public final class SymphonyServletListener extends AbstractServletListener {
         if (StringUtils.containsIgnoreCase(userAgentStr, "mobile")
                 || StringUtils.containsIgnoreCase(userAgentStr, "MQQBrowser")
                 || StringUtils.containsIgnoreCase(userAgentStr, "iphone")
-                || StringUtils.containsIgnoreCase(userAgentStr, "MicroMessenger")) {
+                || StringUtils.containsIgnoreCase(userAgentStr, "MicroMessenger")
+                || StringUtils.containsIgnoreCase(userAgentStr, "CFNetwork")) {
             browserType = BrowserType.MOBILE_BROWSER;
         } else if (StringUtils.containsIgnoreCase(userAgentStr, "Iframely")
                 || StringUtils.containsIgnoreCase(userAgentStr, "Google")

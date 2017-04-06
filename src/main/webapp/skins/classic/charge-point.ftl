@@ -14,9 +14,13 @@
                 <div class="content">
                     <div class="module">
                         <h2 class="sub-head"><span class="ft-blue">♦</span> ${chargePointLabel}</h2>
-                        <div class="content-reset article-charge-point">
+                        <div class="content-reset fn-content">
                             ${chargePointContentLabel}
                         </div>
+                        <div class="top-ranking">
+                            <#include "common/ranking.ftl">
+                        </div>
+                        <br/>
                     </div>
                 </div>
                 <div class="side">

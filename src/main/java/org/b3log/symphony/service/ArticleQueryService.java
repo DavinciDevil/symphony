@@ -17,6 +17,7 @@
  */
 package org.b3log.symphony.service;
 
+import com.vdurmont.emoji.EmojiParser;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.commons.lang.time.DateUtils;
@@ -36,10 +37,7 @@ import org.b3log.symphony.model.*;
 import org.b3log.symphony.processor.advice.validate.UserRegisterValidation;
 import org.b3log.symphony.processor.channel.ArticleChannel;
 import org.b3log.symphony.repository.*;
-import org.b3log.symphony.util.Emotions;
-import org.b3log.symphony.util.Markdowns;
-import org.b3log.symphony.util.Symphonys;
-import org.b3log.symphony.util.Times;
+import org.b3log.symphony.util.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -54,14 +52,13 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Article query service.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 2.25.24.41, Jan 16, 2017
+ * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
+ * @version 2.27.29.52, Apr 5, 2017
  * @since 0.2.0
  */
 @Service
@@ -273,7 +270,9 @@ public class ArticleQueryService {
      * @return permalink and title, <pre>
      * {
      *     "articlePermalink": "",
-     *     "articleTitle": ""
+     *     "articleTitle": "",
+     *     "articleTitleEmoj": "",
+     *     "articleTitleEmojUnicode": ""
      * }
      * </pre>, returns {@code null} if not found
      */
@@ -293,7 +292,16 @@ public class ArticleQueryService {
                 return null;
             }
 
-            return result.optJSONObject(0);
+            final JSONObject ret = result.optJSONObject(0);
+            if (null == ret) {
+                return null;
+            }
+
+            String title = ret.optString(Article.ARTICLE_TITLE);
+            ret.put(Article.ARTICLE_T_TITLE_EMOJI, Emotions.convert(title));
+            ret.put(Article.ARTICLE_T_TITLE_EMOJI_UNICODE, EmojiParser.parseToUnicode(title));
+
+            return ret;
         } catch (final RepositoryException e) {
             LOGGER.log(Level.ERROR, "Gets next article permalink failed", e);
 
@@ -310,7 +318,9 @@ public class ArticleQueryService {
      * @return permalink and title, <pre>
      * {
      *     "articlePermalink": "",
-     *     "articleTitle": ""
+     *     "articleTitle": "",
+     *     "articleTitleEmoj": "",
+     *     "articleTitleEmojUnicode": ""
      * }
      * </pre>, returns {@code null} if not found
      */
@@ -330,7 +340,16 @@ public class ArticleQueryService {
                 return null;
             }
 
-            return result.optJSONObject(0);
+            final JSONObject ret = result.optJSONObject(0);
+            if (null == ret) {
+                return null;
+            }
+
+            String title = ret.optString(Article.ARTICLE_TITLE);
+            ret.put(Article.ARTICLE_T_TITLE_EMOJI, Emotions.convert(title));
+            ret.put(Article.ARTICLE_T_TITLE_EMOJI_UNICODE, EmojiParser.parseToUnicode(title));
+
+            return ret;
         } catch (final RepositoryException e) {
             LOGGER.log(Level.ERROR, "Gets previous article permalink failed", e);
 
@@ -706,6 +725,7 @@ public class ArticleQueryService {
                 article.remove(Article.ARTICLE_UPDATE_TIME);
                 article.remove(Article.ARTICLE_T_HEAT);
                 article.remove(Article.ARTICLE_T_TITLE_EMOJI);
+                article.remove(Article.ARTICLE_T_TITLE_EMOJI_UNICODE);
                 article.remove(Common.TIME_AGO);
                 article.remove(Common.CMT_TIME_AGO);
                 article.remove(Article.ARTICLE_T_TAG_OBJS);
@@ -1131,8 +1151,10 @@ public class ArticleQueryService {
                 data.put(Article.ARTICLE_TITLE, articleTitle);
 
                 String articleContent = data.optString(Article.ARTICLE_CONTENT);
-                articleContent = Markdowns.toHTML(articleContent);
+                // articleContent = Markdowns.toHTML(articleContent); https://hacpai.com/article/1490233597586
+                articleContent = articleContent.replace("\n", "_esc_br_");
                 articleContent = Markdowns.clean(articleContent, "");
+                articleContent = articleContent.replace("_esc_br_", "\n");
                 data.put(Article.ARTICLE_CONTENT, articleContent);
 
                 rev.put(Revision.REVISION_DATA, data);
@@ -1368,7 +1390,13 @@ public class ArticleQueryService {
                 addProjection(Article.ARTICLE_COMMENT_CNT, Integer.class).
                 addProjection(Article.ARTICLE_ANONYMOUS, Integer.class).
                 addProjection(Article.ARTICLE_PERFECT, Integer.class).
+                addProjection(Article.ARTICLE_BAD_CNT, Integer.class).
+                addProjection(Article.ARTICLE_GOOD_CNT, Integer.class).
+                addProjection(Article.ARTICLE_COLLECT_CNT, Integer.class).
+                addProjection(Article.ARTICLE_WATCH_CNT, Integer.class).
+                addProjection(Article.ARTICLE_UA, String.class).
                 addProjection(Article.ARTICLE_CONTENT, String.class);
+
 
         return ret;
     }
@@ -1412,7 +1440,11 @@ public class ArticleQueryService {
                 addProjection(Article.ARTICLE_COMMENT_CNT, Integer.class).
                 addProjection(Article.ARTICLE_ANONYMOUS, Integer.class).
                 addProjection(Article.ARTICLE_PERFECT, Integer.class).
-                addProjection(Article.ARTICLE_CONTENT, String.class).
+                addProjection(Article.ARTICLE_BAD_CNT, Integer.class).
+                addProjection(Article.ARTICLE_GOOD_CNT, Integer.class).
+                addProjection(Article.ARTICLE_COLLECT_CNT, Integer.class).
+                addProjection(Article.ARTICLE_WATCH_CNT, Integer.class).
+                addProjection(Article.ARTICLE_UA, String.class).
                 addProjection(Article.ARTICLE_CONTENT, String.class);
 
         return ret;
@@ -1449,6 +1481,11 @@ public class ArticleQueryService {
                 addProjection(Article.ARTICLE_COMMENT_CNT, Integer.class).
                 addProjection(Article.ARTICLE_ANONYMOUS, Integer.class).
                 addProjection(Article.ARTICLE_PERFECT, Integer.class).
+                addProjection(Article.ARTICLE_BAD_CNT, Integer.class).
+                addProjection(Article.ARTICLE_GOOD_CNT, Integer.class).
+                addProjection(Article.ARTICLE_COLLECT_CNT, Integer.class).
+                addProjection(Article.ARTICLE_WATCH_CNT, Integer.class).
+                addProjection(Article.ARTICLE_UA, String.class).
                 addProjection(Article.ARTICLE_CONTENT, String.class);
 
         return ret;
@@ -1485,6 +1522,11 @@ public class ArticleQueryService {
                 addProjection(Article.ARTICLE_COMMENT_CNT, Integer.class).
                 addProjection(Article.ARTICLE_ANONYMOUS, Integer.class).
                 addProjection(Article.ARTICLE_PERFECT, Integer.class).
+                addProjection(Article.ARTICLE_BAD_CNT, Integer.class).
+                addProjection(Article.ARTICLE_GOOD_CNT, Integer.class).
+                addProjection(Article.ARTICLE_COLLECT_CNT, Integer.class).
+                addProjection(Article.ARTICLE_WATCH_CNT, Integer.class).
+                addProjection(Article.ARTICLE_UA, String.class).
                 addProjection(Article.ARTICLE_CONTENT, String.class);
 
         return ret;
@@ -1690,6 +1732,8 @@ public class ArticleQueryService {
 
                     if (UserExt.USER_STATUS_C_INVALID == author.optInt(UserExt.USER_STATUS)) {
                         article.put(Article.ARTICLE_TITLE, langPropsService.get("articleTitleBlockLabel"));
+                        article.put(Article.ARTICLE_T_TITLE_EMOJI, langPropsService.get("articleTitleBlockLabel"));
+                        article.put(Article.ARTICLE_T_TITLE_EMOJI_UNICODE, langPropsService.get("articleTitleBlockLabel"));
                     }
                 }
             } finally {
@@ -2035,6 +2079,8 @@ public class ArticleQueryService {
      * <li>anonymous process</li>
      * <li>builds tag objects</li>
      * <li>generates article preview content</li>
+     * <li>extracts the first image URL</li>
+     * <li>image processing if using Qiniu</li>
      * </ul>
      *
      * @param avatarViewMode the specified avatar view mode
@@ -2045,17 +2091,28 @@ public class ArticleQueryService {
         toArticleDate(article);
         genArticleAuthor(avatarViewMode, article);
 
-        article.put(Article.ARTICLE_T_PREVIEW_CONTENT, getArticleMetaDesc(article));
+        final String previewContent = getArticleMetaDesc(article);
+        article.put(Article.ARTICLE_T_PREVIEW_CONTENT, previewContent);
+
+        if (StringUtils.length(previewContent) > 100) {
+            article.put(Article.ARTICLE_T_THUMBNAIL_URL, getArticleThumbnail(article));
+        } else {
+            article.put(Article.ARTICLE_T_THUMBNAIL_URL, "");
+        }
+
+        qiniuImgProcessing(article);
 
         String title = article.optString(Article.ARTICLE_TITLE).replace("<", "&lt;").replace(">", "&gt;");
         title = Markdowns.clean(title, "");
         article.put(Article.ARTICLE_TITLE, title);
 
         article.put(Article.ARTICLE_T_TITLE_EMOJI, Emotions.convert(title));
+        article.put(Article.ARTICLE_T_TITLE_EMOJI_UNICODE, EmojiParser.parseToUnicode(title));
 
         if (Article.ARTICLE_STATUS_C_INVALID == article.optInt(Article.ARTICLE_STATUS)) {
             article.put(Article.ARTICLE_TITLE, langPropsService.get("articleTitleBlockLabel"));
             article.put(Article.ARTICLE_T_TITLE_EMOJI, langPropsService.get("articleTitleBlockLabel"));
+            article.put(Article.ARTICLE_T_TITLE_EMOJI_UNICODE, langPropsService.get("articleTitleBlockLabel"));
             article.put(Article.ARTICLE_CONTENT, langPropsService.get("articleContentBlockLabel"));
         }
 
@@ -2124,6 +2181,70 @@ public class ArticleQueryService {
             tags.add(tag);
         }
         article.put(Article.ARTICLE_T_TAG_OBJS, (Object) tags);
+    }
+
+    /**
+     * Gets the first image URL of the specified article.
+     *
+     * @param article the specified article
+     * @return the first image URL, returns {@code ""} if not found
+     */
+    private String getArticleThumbnail(final JSONObject article) {
+        final String content = article.optString(Article.ARTICLE_CONTENT);
+        final String html = Markdowns.toHTML(content);
+        String ret = StringUtils.substringBetween(html, "<img src=\"", "\"");
+
+        final boolean qiniuEnabled = Symphonys.getBoolean("qiniu.enabled");
+        if (qiniuEnabled) {
+            final String qiniuDomain = Symphonys.get("qiniu.domain");
+            if (StringUtils.startsWith(ret, qiniuDomain)) {
+                ret += "?imageView2/1/w/" + 180 + "/h/" + 135 + "/format/jpg/interlace/1/q";
+            } else {
+                ret = "";
+            }
+        } else {
+            if (!StringUtils.startsWith(ret, Latkes.getServePath())) {
+                ret = "";
+            }
+        }
+
+        if (StringUtils.isBlank(ret)) {
+            ret = "";
+        }
+
+        return ret;
+    }
+
+    /**
+     * Qiniu image processing.
+     *
+     * @param article the specified article
+     * @return the first image URL, returns {@code ""} if not found
+     */
+    private void qiniuImgProcessing(final JSONObject article) {
+        final boolean qiniuEnabled = Symphonys.getBoolean("qiniu.enabled");
+        if (!qiniuEnabled) {
+            return;
+        }
+
+        final String qiniuDomain = Symphonys.get("qiniu.domain");
+        String content = article.optString(Article.ARTICLE_CONTENT);
+        final String html = Markdowns.toHTML(content);
+
+        final String[] imgSrcs = StringUtils.substringsBetween(html, "<img src=\"", "\"");
+        if (null == imgSrcs) {
+            return;
+        }
+
+        for (final String imgSrc : imgSrcs) {
+            if (!StringUtils.startsWith(imgSrc, qiniuDomain) || StringUtils.contains(imgSrc, ".gif")) {
+                continue;
+            }
+
+            content = StringUtils.replaceOnce(content, imgSrc, imgSrc + "?imageView2/2/w/768/format/jpg/interlace/0/q");
+        }
+
+       article.put(Article.ARTICLE_CONTENT, content);
     }
 
     /**
@@ -2222,7 +2343,6 @@ public class ArticleQueryService {
                                                          final String articleId, final int fetchSize) throws ServiceException {
         final Query query = new Query().addSort(Keys.OBJECT_ID, SortDirection.DESCENDING)
                 .setFilter(new PropertyFilter(Comment.COMMENT_ON_ARTICLE_ID, FilterOperator.EQUAL, articleId))
-                .addProjection(Comment.COMMENT_AUTHOR_EMAIL, String.class)
                 .addProjection(Keys.OBJECT_ID, String.class)
                 .addProjection(Comment.COMMENT_AUTHOR_ID, String.class)
                 .setPageCount(1).setCurrentPageNum(1).setPageSize(fetchSize);
@@ -2253,10 +2373,10 @@ public class ArticleQueryService {
             }
 
             for (final JSONObject comment : comments) {
-                final String email = comment.optString(Comment.COMMENT_AUTHOR_EMAIL);
                 final String userId = comment.optString(Comment.COMMENT_AUTHOR_ID);
 
                 final JSONObject commenter = userRepository.get(userId);
+                final String email = commenter.optString(User.USER_EMAIL);
 
                 String thumbnailURL = Symphonys.get("defaultThumbnailURL");
                 if (!UserExt.DEFAULT_CMTER_EMAIL.equals(email)) {
@@ -2312,6 +2432,8 @@ public class ArticleQueryService {
             if (null != author && UserExt.USER_STATUS_C_INVALID == author.optInt(UserExt.USER_STATUS)
                     || Article.ARTICLE_STATUS_C_INVALID == article.optInt(Article.ARTICLE_STATUS)) {
                 article.put(Article.ARTICLE_TITLE, langPropsService.get("articleTitleBlockLabel"));
+                article.put(Article.ARTICLE_T_TITLE_EMOJI, langPropsService.get("articleTitleBlockLabel"));
+                article.put(Article.ARTICLE_T_TITLE_EMOJI_UNICODE, langPropsService.get("articleTitleBlockLabel"));
                 article.put(Article.ARTICLE_CONTENT, langPropsService.get("articleContentBlockLabel"));
                 article.put(Article.ARTICLE_T_PREVIEW_CONTENT, langPropsService.get("articleContentBlockLabel"));
                 article.put(Article.ARTICLE_T_TOC, "");
@@ -2349,18 +2471,18 @@ public class ArticleQueryService {
 
                     article.put(Article.ARTICLE_CONTENT, blockContent);
                     article.put(Common.DISCUSSION_VIEWABLE, false);
-
                     article.put(Article.ARTICLE_REWARD_CONTENT, "");
                     article.put(Article.ARTICLE_REWARD_POINT, 0);
                     article.put(Article.ARTICLE_T_TOC, "");
+                    article.put(Article.ARTICLE_AUDIO_URL, "");
 
                     return;
                 }
             }
 
             for (final String userName : userNames) {
-                articleContent = articleContent.replace('@' + userName, "@<a href='" + Latkes.getServePath()
-                        + "/member/" + userName + "'>" + userName + "</a>");
+                articleContent = articleContent.replace('@' + userName + " ", "@<a href='" + Latkes.getServePath()
+                        + "/member/" + userName + "'>" + userName + "</a> ");
             }
 
             articleContent = shortLinkQueryService.linkArticle(articleContent);
@@ -2375,8 +2497,8 @@ public class ArticleQueryService {
                 final Set<String> rewordContentUserNames = userQueryService.getUserNames(articleRewardContent);
 
                 for (final String userName : rewordContentUserNames) {
-                    articleRewardContent = articleRewardContent.replace('@' + userName, "@<a href='" + Latkes.getServePath()
-                            + "/member/" + userName + "'>" + userName + "</a>");
+                    articleRewardContent = articleRewardContent.replace('@' + userName + " ",
+                            "@<a href='" + Latkes.getServePath() + "/member/" + userName + "'>" + userName + "</a> ");
                 }
 
                 articleRewardContent = Emotions.convert(articleRewardContent);
@@ -2384,47 +2506,7 @@ public class ArticleQueryService {
             }
 
             markdown(article);
-
-            final String articleId = article.optString(Keys.OBJECT_ID);
-
-            // MP3 player render
-            final StringBuffer contentBuilder = new StringBuffer();
-            articleContent = article.optString(Article.ARTICLE_CONTENT);
-            final String MP3_URL_REGEX = "<p>( )*<a href.*\\.mp3.*</a>( )*</p>";
-            final Pattern p = Pattern.compile(MP3_URL_REGEX);
-            final Matcher m = p.matcher(articleContent);
-
-            int i = 0;
-            while (m.find()) {
-                String mp3URL = m.group();
-                String mp3Name = StringUtils.substringBetween(mp3URL, "\">", ".mp3</a>");
-                mp3URL = StringUtils.substringBetween(mp3URL, "href=\"", "\" rel=");
-                final String playerId = "player" + articleId + i++;
-
-                m.appendReplacement(contentBuilder, "<div id=\"" + playerId + "\" class=\"aplayer\"></div>\n"
-                        + "<script>\n"
-                        + "var " + playerId + " = new APlayer({\n"
-                        + "    element: document.getElementById('" + playerId + "'),\n"
-                        + "    narrow: false,\n"
-                        + "    autoplay: false,\n"
-                        + "    showlrc: false,\n"
-                        + "    mutex: true,\n"
-                        + "    theme: '#e6d0b2',\n"
-                        + "    music: {\n"
-                        + "        title: '" + mp3Name + "',\n"
-                        + "        author: '" + mp3URL + "',\n"
-                        + "        url: '" + mp3URL + "',\n"
-                        + "        pic: '" + Latkes.getStaticServePath() + "/js/lib/aplayer/default.jpg'\n"
-                        + "    }\n"
-                        + "});\n"
-                        + playerId + ".init();\n"
-                        + "</script>");
-            }
-            m.appendTail(contentBuilder);
-
-            articleContent = contentBuilder.toString();
-            articleContent = articleContent.replaceFirst("<div id=\"player",
-                    "<script src=\"" + Latkes.getStaticServePath() + "/js/lib/aplayer/APlayer.min.js\"></script>\n<div id=\"player");
+            articleContent = MP3Players.render(article.optString(Article.ARTICLE_CONTENT));
 
             article.put(Article.ARTICLE_CONTENT, articleContent);
             article.put(Article.ARTICLE_T_PREVIEW_CONTENT, getArticleMetaDesc(article));
@@ -2562,7 +2644,6 @@ public class ArticleQueryService {
      */
     public String getArticleMetaDesc(final JSONObject article) {
         final String articleId = article.optString(Keys.OBJECT_ID);
-
         String articleAbstract = articleCache.getArticleAbstract(articleId);
         if (StringUtils.isNotBlank(articleAbstract)) {
             return articleAbstract;
@@ -2592,10 +2673,10 @@ public class ArticleQueryService {
 
             final Whitelist whitelist = Whitelist.basicWithImages();
             whitelist.addTags("object", "video");
-            ret = Jsoup.clean(ret,whitelist);
+            ret = Jsoup.clean(ret, whitelist);
 
             final int threshold = 20;
-            String[] pics = StringUtils.substringsBetween(ret, "<img", "/>");
+            String[] pics = StringUtils.substringsBetween(ret, "<img", ">");
             if (null != pics) {
                 if (pics.length > threshold) {
                     pics = Arrays.copyOf(pics, threshold);
@@ -2604,7 +2685,7 @@ public class ArticleQueryService {
                 final String[] picsRepl = new String[pics.length];
                 for (int i = 0; i < picsRepl.length; i++) {
                     picsRepl[i] = langPropsService.get("picTagLabel", Latkes.getLocale());
-                    pics[i] = "<img" + pics[i] + "/>";
+                    pics[i] = "<img" + pics[i] + ">";
 
                     if (i > threshold) {
                         break;
@@ -2652,12 +2733,10 @@ public class ArticleQueryService {
                 ret = StringUtils.replaceEach(ret, objs, objsRepl);
             }
 
-            if (ret.length() >= length && null != pics) {
-                ret = StringUtils.substring(ret, 0, length)
-                        + " ....";
-
-                ret = Jsoup.clean(Jsoup.parse(ret).text(), Whitelist.none());
-                ret = ret.replaceAll("\"", "'");
+            String tmp = Jsoup.clean(Jsoup.parse(ret).text(), Whitelist.none());
+            if (tmp.length() >= length && null != pics) {
+                tmp = StringUtils.substring(tmp, 0, length) + " ....";
+                ret = tmp.replaceAll("\"", "'");
 
                 articleCache.putArticleAbstract(articleId, ret);
 
@@ -2679,13 +2758,12 @@ public class ArticleQueryService {
                 ret = StringUtils.replaceEach(ret, urls, urlsRepl);
             }
 
-            if (ret.length() >= length) {
-                ret = StringUtils.substring(ret, 0, length)
-                        + " ....";
+            tmp = Jsoup.clean(Jsoup.parse(ret).text(), Whitelist.none());
+            if (tmp.length() >= length) {
+                tmp = StringUtils.substring(tmp, 0, length) + " ....";
             }
 
-            ret = Jsoup.clean(Jsoup.parse(ret).text(), Whitelist.none());
-            ret = ret.replaceAll("\"", "'");
+            ret = tmp.replaceAll("\"", "'");
 
             articleCache.putArticleAbstract(articleId, ret);
 
@@ -2718,7 +2796,7 @@ public class ArticleQueryService {
 
             final Elements hs = doc.select("h1, h2, h3, h4, h5");
 
-            if (hs.isEmpty()) {
+            if (hs.size() < 3) {
                 return "";
             }
 
@@ -2731,7 +2809,7 @@ public class ArticleQueryService {
 
                 element.before("<span id='" + id + "'></span>");
 
-                listBuilder.append("<li class='toc-").append(tagName).append("'><a href='#").append(id).append("'>").append(text).append(
+                listBuilder.append("<li class='toc-").append(tagName).append("'><a data-id=\"").append(id).append("\" href=\"javascript:Comment._bgFade($('#").append(id).append("'))\">").append(text).append(
                         "</a></li>");
             }
             listBuilder.append("</ul>");

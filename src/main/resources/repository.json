@@ -1,6 +1,6 @@
 {
     "description": "Description of repository structures, for generation (DDL: http://en.wikipedia.org/wiki/Data_Definition_Language) of the relational database table and persistence validation.",
-    "version": "4.35.7.20, Jan 18, 2017",
+    "version": "4.37.8.22, Mar 19, 2017",
     "authors": [
         "Liang Ding",
         "Zephyr",
@@ -770,11 +770,6 @@
                     "type": "long"
                 },
                 {
-                    "name": "commentAuthorEmail",
-                    "type": "String",
-                    "length": 255
-                },
-                {
                     "name": "commentAuthorId",
                     "type": "String",
                     "length": 19
@@ -832,6 +827,11 @@
                 {
                     "name": "commentReplyCnt",
                     "type": "int"
+                },
+                {
+                    "name": "commentAudioURL",
+                    "type": "String",
+                    "length": 256
                 }
             ]
         },
@@ -1274,6 +1274,11 @@
                     "description": "0: public, 1: private"
                 },
                 {
+                    "name": "userWatchingArticleStatus",
+                    "type": "int",
+                    "description": "0: public, 1: private"
+                },
+                {
                     "name": "userFollowingTagStatus",
                     "type": "int",
                     "description": "0: public, 1: private"
@@ -1362,11 +1367,6 @@
                 },
                 {
                     "name": "articleTags",
-                    "type": "String",
-                    "length": 255
-                },
-                {
-                    "name": "articleAuthorEmail",
                     "type": "String",
                     "length": 255
                 },
@@ -1514,6 +1514,11 @@
                     "name": "articleAnonymousView",
                     "type": "int",
                     "description": "0: allow anonymous view, 1: not allow"
+                },
+                {
+                    "name": "articleAudioURL",
+                    "type": "String",
+                    "length": 256
                 }
             ]
         },
@@ -1556,7 +1561,8 @@
                 {
                     "name": "clientAdminEmail",
                     "type": "String",
-                    "length": 255
+                    "length": 255,
+                    "nullable": true
                 }
             ]
         },

@@ -7,9 +7,10 @@
             <input name="id" type="text" placeholder="${articleLabel} Id"/>
             <button type="submit" class="green">${searchLabel}</button>
             <#if (esEnabled || algoliaEnabled) && permissions["articleReindexArticles"].permissionGrant>
+                &nbsp;
             <button type="button" class="btn red" onclick="searchIndex();">${searchIndexLabel}</button>
             </#if>
-            <#if permissions["articleAddArticle"].permissionGrant>
+            <#if permissions["articleAddArticle"].permissionGrant>  &nbsp;
             <button type="button" class="btn red" onclick="window.location = '${servePath}/admin/add-article'">${addArticleLabel}</button>
             </#if>
         </form>
@@ -21,7 +22,7 @@
                          style="background-image:url('${item.articleAuthorThumbnailURL20}')"></div>
                     <div class="fn-flex-1">
                         <h2>
-                            <a href="${item.articlePermalink}">${item.articleTitle}</a>
+                            <a href="${servePath}${item.articlePermalink}">${item.articleTitle}</a>
                             <span class="ft-smaller">
                             <#if item.articleStatus == 0>
                                 <span class="ft-gray">${validLabel}</span>

@@ -7,7 +7,7 @@
         <meta name="robots" content="none" />
         </@head>
         <link rel="stylesheet" href="${staticServePath}/css/home.css?${staticResourceVersion}" />
-        <link rel="stylesheet" href="${staticServePath}/js/lib/editor/codemirror.min.css">
+        <link rel="stylesheet" href="${staticServePath}/js/lib/editor/codemirror.min.css?${staticResourceVersion}">
         <link rel="stylesheet" href="${staticServePath}/js/lib/highlight.js-9.6.0/styles/github.css">
     </head>
     <body>
@@ -16,7 +16,7 @@
             <div class="form fn-flex-1 fn-clear">
                 <input type="text" id="articleTitle" autocomplete="off" tabindex="1"<#if requisite> readonly disabled</#if>
                        value="<#if article??>${article.articleTitle}</#if>" placeholder="${titleLabel}" />
-                <div class="article-content">
+                <div>
                     <textarea id="articleContent" tabindex="2"
                               placeholder="<#if !article?? && 1 == articleType>${addDiscussionEditorPlaceholderLabel}</#if>${addArticleEditorPlaceholderLabel}"><#if article??>${article.articleContent?html}</#if><#if at??>@${at}</#if></textarea>
                 </div>
@@ -126,11 +126,12 @@
                         </#if>
 
                         <#if article??>
-                            <#if permissions["commonAddArticle"].permissionGrant>
-                            <button class="red" tabindex="10"<#if requisite> readonly disabled</#if> onclick="AddArticle.add('${csrfToken}')">${submitLabel}</button>
+                            <#if permissions["commonUpdateArticle"].permissionGrant>
+                            <button class="red" tabindex="10"<#if requisite> readonly disabled</#if>
+                                onclick="AddArticle.add('${csrfToken}')">${submitLabel}</button>
                             </#if>
                         <#else>
-                            <#if permissions["commonUpdateArticle"].permissionGrant>
+                            <#if permissions["commonAddArticle"].permissionGrant>
                             <button class="red" tabindex="10"<#if requisite> readonly disabled</#if>
                                 onclick="AddArticle.add('${csrfToken}')">${postLabel}</button>
                             </#if>
@@ -140,7 +141,7 @@
             </div>
         </div>
         <#include "../footer.ftl">
-        <script src="${staticServePath}/js/lib/editor/codemirror.min.js?4.13"></script>
+        <script src="${staticServePath}/js/lib/editor/codemirror.min.js?${staticResourceVersion}"></script>
         <script src="${staticServePath}/js/lib/highlight.js-9.6.0/highlight.pack.js"></script>
         <script src="${staticServePath}/js/lib/jquery/file-upload-9.10.1/jquery.fileupload.min.js"></script>
         <script src="${staticServePath}/js/lib/sound-recorder/SoundRecorder.js"></script>
@@ -148,7 +149,7 @@
             Label.articleTitleErrorLabel = "${articleTitleErrorLabel}";
             Label.articleContentErrorLabel = "${articleContentErrorLabel}";
             Label.tagsErrorLabel = "${tagsErrorLabel}";
-            Label.userName = "${userName}";
+            Label.userName = "${currentUser.userName}";
             Label.recordDeniedLabel = "${recordDeniedLabel}";
             Label.recordDeviceNotFoundLabel = "${recordDeviceNotFoundLabel}";
             Label.uploadLabel = "${uploadLabel}";

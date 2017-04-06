@@ -19,9 +19,7 @@
                             ${characterLabel}
                             <span class="ft-13 ft-gray">${activityCharacterTitleLabel}</span>
                         </h2>
-                        <div class="fn-clear fn-m10">   
-                            <div class="fn-hr5"></div>
-                            <div class="fn-hr5"></div>
+                        <div class="fn-clear fn-content">
                             <div class="fn-left">
                                 <#if noCharacter??>
                                 ${activityCharacterNotCharacterLabel}
@@ -37,7 +35,7 @@
                         </div>
                         <canvas id="charCanvas" width="500" height="490"></canvas>
                         <#if !noCharacter??>
-                        <div class="content-reset fn-m10">
+                        <div class="content-reset">
                             <ul>
                                 <li>${userCharacterProgressLabel}${colonLabel}${userProgress}</li>
                                 <li>${totalCharacterProgressLabel}${colonLabel}${totalProgress}</li>

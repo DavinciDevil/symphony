@@ -21,7 +21,7 @@
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author Zephyr
- * @version 1.41.29.43, Jan 18, 2017
+ * @version 1.42.30.45, Apr 5, 2017
  */
 
 /**
@@ -32,7 +32,34 @@ var Util = {
     /**
      * @description 前置快捷键
      */
-     prevKey: undefined,
+    prevKey: undefined,
+    /**
+     * 粘贴
+     * @param {jQuery} $click 点击触发复制事件的元素
+     * @param {jQuery} $text 包含复制内容的元素
+     * @param {function} cb 复制成功的回调函数
+     */
+    clipboard: function ($click, $text, cb) {
+        $click.click(function(event) {
+              $text[0].select();
+
+              try {
+                // Now that we've selected the anchor text, execute the copy command
+                var successful = document.execCommand('copy');
+                if (successful) {
+                    cb();
+                } else {
+                    console.log('Copy command was unsuccessful');
+                }
+              } catch(err) {
+                console.log('Oops, unable to copy');
+              }
+
+              // Remove the selections - NOTE: Should use
+              // removeRange(range) when it is supported
+              window.getSelection().removeAllRanges();
+        });
+    },
     /**
      * @description 关闭 alert
      */
@@ -94,19 +121,20 @@ var Util = {
          * @returns {undefined}
          */
         var goFocus = function (type) {
-            var $focus = $('.list > ul > li.focus');
+            var $focus = $('.list > ul > li.focus'),
+            offsetHeight = $('#replyBtn').length === 0 ? 0 : 48;
             if ($focus.length === 1) {
                 if (type === 'top' || type === 'bottom') {
-                    $(window).scrollTop($focus.offset().top);
+                    $(window).scrollTop($focus.offset().top - offsetHeight);
                     return false;
                 }
 
                 if ($(window).height() + $(window).scrollTop() < $focus.offset().top + $focus.outerHeight()
                         || $(window).scrollTop() > $focus.offset().top) {
                     if (type === 'down') {
-                        $(window).scrollTop($focus.offset().top - ($(window).height() - $focus.outerHeight()));
+                        $(window).scrollTop($focus.offset().top - ($(window).height() - $focus.outerHeight()) - offsetHeight);
                     } else {
-                        $(window).scrollTop($focus.offset().top);
+                        $(window).scrollTop($focus.offset().top - offsetHeight);
                     }
                 }
             }
@@ -522,36 +550,71 @@ var Util = {
         var emojString = '';
 
         $.ajax({
-            async: false,
             url: Label.servePath + "/users/emotions",
             type: "GET",
             success: function (result) {
                 emojString = result.emotions;
+
+                if ("" === emojString) {
+                    emojString = allEmoj;
+                } else {
+                    var temp = emojString.split(",");
+                    for (var ti = 0; ti < temp.length; ti++) {
+                        allEmoj = allEmoj.replace(temp[ti] + ',', ',');
+                    }
+                    emojString = emojString + ',' + allEmoj;
+                }
+                emojString = emojString.replace(/,+/g, ','); // 全局替换重复的逗号
+
+                var emojis = emojString.split(/,/);
+                var emojiAutocompleteHints = [];
+                for (var i = 0; i < emojis.length; i++) {
+                    var displayText = emojis[i];
+                    var text = emojis[i];
+                    emojiAutocompleteHints.push({
+                        displayText: "<span>" + displayText +
+                                '&nbsp;<img style="width: 16px" src="' + Label.staticServePath + '/emoji/graphics/' + text + '.png"></span>',
+                        text: text + ": "
+                    });
+                }
+
+                CodeMirror.registerHelper("hint", "emoji", function (cm) {
+                    var word = /[\w$]+/;
+                    var cur = cm.getCursor(), curLine = cm.getLine(cur.line);
+                    var start = cur.ch, end = start;
+                    while (end < curLine.length && word.test(curLine.charAt(end))) {
+                        ++end;
+                    }
+                    while (start && word.test(curLine.charAt(start - 1))) {
+                        --start;
+                    }
+                    var tok = cm.getTokenAt(cur);
+                    var autocompleteHints = [];
+                    var input = tok.string.trim();
+                    var matchCnt = 0;
+                    for (var i = 0; i < emojis.length; i++) {
+                        var displayText = emojis[i];
+                        var text = emojis[i];
+                        if (Util.startsWith(text, input)) {
+                            autocompleteHints.push({
+                                displayText: '<span style="font-size: 1rem;line-height:22px"><img style="width: 1rem;margin:3px 0;float:left" src="' + Label.staticServePath + '/emoji/graphics/' + text + '.png"> ' +
+                                        displayText.toString() + '</span>',
+                                text: ":" + text + ": "
+                            });
+                            matchCnt++;
+                        }
+
+                        if (matchCnt > 10) {
+                            break;
+                        }
+                    }
+
+                    return {list: autocompleteHints, from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, end)};
+                });
             }
         });
 
-        if ("" === emojString) {
-            emojString = allEmoj;
-        } else {
-            var temp = emojString.split(",");
-            for (var ti = 0; ti < temp.length; ti++) {
-                allEmoj = allEmoj.replace(temp[ti] + ',', ',');
-            }
-            emojString = emojString + ',' + allEmoj;
-        }
-        emojString = emojString.replace(/,+/g, ','); // 全局替换重复的逗号
 
-        var emojis = emojString.split(/,/);
-        var emojiAutocompleteHints = [];
-        for (var i = 0; i < emojis.length; i++) {
-            var displayText = emojis[i];
-            var text = emojis[i];
-            emojiAutocompleteHints.push({
-                displayText: "<span>" + displayText +
-                        '&nbsp;<img style="width: 16px" src="' + Label.staticServePath + '/emoji/graphics/' + text + '.png"></span>',
-                text: text + ": "
-            });
-        }
 
         if (Label.commonAtUser && Label.commonAtUser === 'true') {
             CodeMirror.registerHelper("hint", "userName", function (cm) {
@@ -605,40 +668,6 @@ var Util = {
                 return {list: autocompleteHints, from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, end)};
             });
         }
-
-        CodeMirror.registerHelper("hint", "emoji", function (cm) {
-            var word = /[\w$]+/;
-            var cur = cm.getCursor(), curLine = cm.getLine(cur.line);
-            var start = cur.ch, end = start;
-            while (end < curLine.length && word.test(curLine.charAt(end))) {
-                ++end;
-            }
-            while (start && word.test(curLine.charAt(start - 1))) {
-                --start;
-            }
-            var tok = cm.getTokenAt(cur);
-            var autocompleteHints = [];
-            var input = tok.string.trim();
-            var matchCnt = 0;
-            for (var i = 0; i < emojis.length; i++) {
-                var displayText = emojis[i];
-                var text = emojis[i];
-                if (Util.startsWith(text, input)) {
-                    autocompleteHints.push({
-                        displayText: '<span style="font-size: 1rem;line-height:22px"><img style="width: 1rem;margin:3px 0;float:left" src="' + Label.staticServePath + '/emoji/graphics/' + text + '.png"> ' +
-                                displayText.toString() + '</span>',
-                        text: ":" + text + ": "
-                    });
-                    matchCnt++;
-                }
-
-                if (matchCnt > 10) {
-                    break;
-                }
-            }
-
-            return {list: autocompleteHints, from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, end)};
-        });
 
         CodeMirror.commands.autocompleteUserName = function (cm) {
             cm.showHint({hint: CodeMirror.hint.userName, completeSingle: false});
@@ -913,7 +942,7 @@ var Util = {
                 if (result.sc) {
                     $(it).removeClass("disabled");
                     if (typeof (index) !== 'undefined') {
-                        if ('article' === type) {
+                        if ('article' === type || 'tag' === type) {
                             $(it).html('<span class="icon-star"></span> ' + (index + 1)).
                                 attr("onclick", "Util.unfollow(this, '" + id + "', '" + type + "', " + (index + 1) + ")")
                                 .attr("aria-label", Label.uncollectLabel).addClass('ft-red');
@@ -957,7 +986,7 @@ var Util = {
             success: function (result, textStatus) {
                 if (result.sc) {
                     if (typeof (index) !== 'undefined') {
-                        if ('article' === type) {
+                        if ('article' === type || 'tag' === type) {
                             $(it).removeClass('ft-red').html('<span class="icon-star"></span> ' + (index - 1))
                                 .attr("onclick", "Util.follow(this, '" + id + "', '" + type + "'," + (index - 1) + ")")
                                 .attr("aria-label", Label.collectLabel);
@@ -1117,7 +1146,7 @@ var Util = {
 
 
         $(window).scroll(function () {
-            if ($(window).scrollTop() > 20) {
+            if ($(window).scrollTop() > 20 && $('#replyBtn').length === 0) {
                 $(".go-top").show();
             } else {
                 $(".go-top").hide();
@@ -1195,16 +1224,16 @@ var Util = {
         var href = location.href;
         $(".user-nav > a").each(function () {
             if (href.indexOf($(this).attr("href")) === 0) {
-                $(this).addClass("selected");
+                $(this).addClass("current");
             } else if (location.pathname === "/register") {
                 // 注册没有使用 href，对其进行特殊处理
-                $(".user-nav a:last").addClass("selected");
+                $(".user-nav a:last").addClass("current");
             } else if (location.pathname === "/login") {
                 // 登录没有使用 href，对其进行特殊处理
-                $(".user-nav a:first").addClass("selected");
+                $(".user-nav a:first").addClass("current");
             } else if (href.indexOf(Label.servePath + '/settings') === 0 ||
              href.indexOf($("#aPersonListPanel").data('url')) === 0) {
-                $("#aPersonListPanel").addClass("selected");
+                $("#aPersonListPanel").addClass("current");
             }
         });
 
@@ -1259,7 +1288,8 @@ var Util = {
      * @param {Strng} obj.qiniuDomain 七牛 Domain
      */
     uploadFile: function (obj) {
-        var filename = "";
+        var filename = "", fileIndex = 0,
+            filenames = [];
         var ext = "";
         var isImg = false;
 
@@ -1271,6 +1301,7 @@ var Util = {
                 url: Label.servePath + "/upload",
                 paramName: "file",
                 add: function (e, data) {
+                    fileIndex++;
                     if (window.File && window.FileReader && window.FileList && window.Blob) {
                         var reader = new FileReader();
                         reader.readAsArrayBuffer(data.files[0]);
@@ -1301,7 +1332,7 @@ var Util = {
                     return data;
                 },
                 submit: function (e, data) {
-                    if (obj.editor.replaceRange) {
+                    if (obj.editor.replaceRange && fileIndex === 1) {
                         var cursor = obj.editor.getCursor();
                         obj.editor.replaceRange(obj.uploadingLabel, cursor, cursor);
                     } else {
@@ -1330,6 +1361,7 @@ var Util = {
                         obj.editor.$it.val(obj.editor.$it.val() + '![' + filename + '](' + filePath + ') \n\n');
                         $('#' + obj.id + ' input').prop('disabled', false);
                     }
+                    fileIndex--;
                 },
                 fail: function (e, data) {
                     alert("Upload error: " + data.errorThrown);
@@ -1340,6 +1372,7 @@ var Util = {
                     } else {
                         $('#' + obj.id + ' input').prop('disabled', false);
                     }
+                    fileIndex--;
                 }
             }).on('fileuploadprocessalways', function (e, data) {
                 var currentFile = data.files[data.index];
@@ -1361,7 +1394,6 @@ var Util = {
                 if (data.files[0].name) {
                     var processName = data.files[0].name.match(/[a-zA-Z0-9.]/g).join('');
                     filename = getUUID() + '-' + processName;
-
                     // 文件名称全为中文时，移除 ‘-’
                     if (processName.split('.')[0] === '') {
                         filename = getUUID() + processName;
@@ -1370,6 +1402,7 @@ var Util = {
                     filename = getUUID() + '.' + data.files[0].type.split("/")[1];
                 }
 
+                filenames.push(filename);
 
                 if (window.File && window.FileReader && window.FileList && window.Blob) {
                     var reader = new FileReader();
@@ -1397,7 +1430,8 @@ var Util = {
                 }
             },
             formData: function (form) {
-                var data = form.serializeArray();
+                var data = form.serializeArray(),
+                filename = filenames[fileIndex++];
 
                 data.push({name: 'key', value: "file/" + (new Date()).getFullYear() + "/"
                             + ((new Date()).getMonth() + 1) + '/' + filename});
@@ -1407,7 +1441,7 @@ var Util = {
                 return data;
             },
             submit: function (e, data) {
-                if (obj.editor.replaceRange) {
+                if (obj.editor.replaceRange && fileIndex === 1) {
                     var cursor = obj.editor.getCursor();
                     obj.editor.replaceRange(obj.uploadingLabel, cursor, cursor);
                 } else {
@@ -1421,6 +1455,12 @@ var Util = {
 
                     return;
                 }
+                filenames.map(function (e, i, data) {
+                    if (qiniuKey.split('/')[3] === e) {
+                        filename = e;
+                        data.splice(i, 1);
+                    }
+                });
 
                 if (obj.editor.replaceRange) {
                     var cursor = obj.editor.getCursor();
@@ -1436,6 +1476,7 @@ var Util = {
                     obj.editor.$it.val('![' + filename + '](' + obj.qiniuDomain + '/' + qiniuKey + ') \n\n');
                     $('#' + obj.id + ' input').prop('disabled', false);
                 }
+                fileIndex--;
             },
             fail: function (e, data) {
                 alert("Upload error: " + data.errorThrown);
@@ -1446,6 +1487,7 @@ var Util = {
                 } else {
                     $('#' + obj.id + ' input').prop('disabled', false);
                 }
+                fileIndex--;
             }
         }).on('fileuploadprocessalways', function (e, data) {
             var currentFile = data.files[data.index];

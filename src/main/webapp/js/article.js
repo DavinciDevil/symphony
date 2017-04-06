@@ -20,7 +20,7 @@
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.26.40.28, Jan 15, 2017
+ * @version 1.33.49.34, Apr 5, 2017
  */
 
 /**
@@ -45,7 +45,11 @@ var Comment = {
      * @returns {undefined}
      */
     _bgFade: function ($obj) {
-        $(window).scrollTop($obj.offset().top);
+        if ($obj.length === 0) {
+            return false;
+        }
+
+        $(window).scrollTop($obj[0].offsetTop - 48);
 
         if ($obj.attr('id') === 'comments') {
             return false;
@@ -69,9 +73,13 @@ var Comment = {
      * @param {string} url 跳转的 url 
      */
     goComment: function (url) {
+        if ($(url.substr(url.length - 14, 14)).length === 0) {
+            window.location = url;
+            return false;
+        }
+
         $('#comments .list > ul > li').removeAttr('style');
         Comment._bgFade($(url.substr(url.length - 14, 14)));
-        window.location = url;
     },
     /**
      * 设置评论来源
@@ -87,33 +95,56 @@ var Comment = {
         });
     },
     /**
+     * 回复面板显示／隐藏
+     * @param {function} cb 面板弹出后的回掉函数
+     */
+    _toggleReply: function (cb) {
+        if (!Label.isLoggedIn) {
+            Util.needLogin();
+            return false;
+        }
+        if ($(this).data('hasPermission') === 'false') {
+            Article.permissionTip(Label.noPermissionLabel)
+            return false;
+        }
+
+        if ($('.footer').attr('style')) {
+            $('.editor-panel .wrapper').slideUp(function () {
+                $('.editor-panel').hide();
+                $('.footer').removeAttr('style');
+            });
+            return false;
+        }
+
+        $('.footer').css('margin-bottom', $('.editor-panel').outerHeight() + 'px');
+        $('#replyUseName').html('<a href="javascript:void(0)" onclick="Util.goTop();Comment._bgFade($(\'.article-module\'))" class="ft-a-title"><span class="icon-reply-to"></span>'
+            + $('.article-title').text() + '</a>').removeData();
+
+        // 如果 hide 初始化， focus 无效
+        if ($('.editor-panel').css('bottom') !== '0px') {
+            $('.editor-panel .wrapper').hide();
+            $('.editor-panel').css('bottom', 0);
+        }
+
+        $('.editor-panel').show();
+        $('.editor-panel .wrapper').slideDown(function () {
+            Comment.editor.focus();
+            cb ? cb() : '';
+        });
+    },
+    /**
      * 评论面板事件绑定
      * @returns {undefined}
      */
     _initEditorPanel: function () {
         // 回复按钮设置
-        $('.article-actions .icon-reply-btn').click(function () {
-            if (!Label.isLoggedIn) {
-                Util.needLogin();
-                return false;
-            }
-            $('.footer').css('margin-bottom', $('.editor-panel').outerHeight() + 'px');
-            $('#replyUseName').html('<a href="javascript:void(0)" onclick="Util.goTop();Comment._bgFade($(\'.article-module\'))" class="ft-a-title"><span class="icon-reply-to"></span>' 
-                + $('.article-title').text() + '</a>').removeData();
-
-            // 如果 hide 初始化， focus 无效
-            if ($('.editor-panel').css('bottom') !== '0px') {
-                $('.editor-panel').hide().css('bottom', 0);
-            }
-            $('.editor-panel').slideDown(function () {
-                Comment.editor.focus();
-            });
+        $('#replyBtn').click(function () {
+            Comment._toggleReply();
         });
 
         // 评论框控制
         $('.editor-panel .editor-hide').click(function () {
-            $('.editor-panel').slideUp();
-            $('.footer').removeAttr('style');
+             $('#replyBtn').click();
         });
     },
     /**
@@ -142,10 +173,10 @@ var Comment = {
         }).bind('keydown', 'r', function assets(event) {
             if (!Util.prevKey) {
                 // r 回复帖子
-                $('.article-actions .icon-reply-btn').click();
+                $('#replyBtn').click();
             } else if (Util.prevKey === 'v') {
                 // v r 打赏帖子
-                $('.action-btns .icon-points').parent().click();
+                $('#articleRewardContent .icon-points').parent().click();
             } else if ($('#comments .list > ul > li.focus').length === 1 && Util.prevKey === 'x') {
                 // x r 回复回帖
                 $('#comments .list > ul > li.focus .icon-reply').parent().click();
@@ -183,8 +214,7 @@ var Comment = {
             return false;
         }).bind('keyup', 'a', function assets() {
             // x a 管理员编辑选中的回贴
-            if (Util.prevKey === 'x' && Label.isAdminLoggedIn 
-                && $('#comments .list > ul > li.focus .icon-setting').parent().length === 1) {
+            if (Util.prevKey === 'x' && $('#comments .list > ul > li.focus .icon-setting').parent().length === 1) {
                 window.location = $('#comments .list > ul > li.focus .icon-setting').parent().attr('href');
             }
             return false;
@@ -203,55 +233,61 @@ var Comment = {
         }).bind('keyup', 't', function assets() {
             // v t 赞同帖子
             if (Util.prevKey === 'v') {
-                $('.action-btns .icon-thumbs-up').parent().click();
+                $('.article-header .icon-thumbs-up').parent().click();
             }
             return false;
         }).bind('keyup', 'd', function assets() {
             // v d 反对帖子
             if (Util.prevKey === 'v') {
-                $('.action-btns .icon-thumbs-down').parent().click();
+                $('.article-header .icon-thumbs-down').parent().click();
             }
             return false;
+        }).bind('keyup', 'i', function assets() {
+              // v i 关注帖子
+              if (Util.prevKey === 'v') {
+                  $('.article-header .icon-view').parent().click();
+              }
+              return false;
         }).bind('keyup', 'c', function assets() {
             // v c 收藏帖子
             if (Util.prevKey === 'v') {
-                $('.action-btns .icon-star').parent().click();
+                $('.article-header .icon-star').parent().click();
             }
             return false;
         }).bind('keyup', 'l', function assets() {
             // v h 查看帖子历史
             if (Util.prevKey === 'v') {
-                $('.action-btns .icon-history').parent().click();
+                $('.article-header .icon-history').parent().click();
             }
             return false;
         }).bind('keyup', 'e', function assets() {
             // v e 编辑帖子
-            if (Util.prevKey === 'v' && $('.action-btns .icon-edit').parent().length === 1) {
-                window.location = $('.action-btns .icon-edit').parent().attr('href');
+            if (Util.prevKey === 'v' && $('.article-actions .icon-edit').parent().length === 1) {
+                window.location = $('.article-actions .icon-edit').parent().attr('href');
             }
             return false;
         }).bind('keyup', 's', function assets() {
-            // v p 置顶帖子
-            if (Util.prevKey === 'v') {
+            // v s 置顶帖子
+            if (Util.prevKey === 'v' && $('.article-actions .icon-chevron-up').length === 1) {
                 Article.stick(Label.articleOId);
             }
             return false;
         }).bind('keyup', 'a', function assets() {
             // v a 管理员编辑帖子 
-            if (Util.prevKey === 'v' && $('.action-btns .icon-setting').parent().length === 1) {
-                window.location = $('.action-btns .icon-setting').parent().attr('href');
+            if (Util.prevKey === 'v' && $('.article-actions .icon-setting').parent().length === 1) {
+                window.location = $('.article-actions .icon-setting').parent().attr('href');
             }
             return false;
         }).bind('keyup', 'p', function assets() {
             // v p 跳转到上一篇帖子 prev
-            if (Util.prevKey === 'v' && $('.article-info-action a[rel=prev]').length === 1) {
-                window.location = $('.article-info-action a[rel=prev]').attr('href');
+            if (Util.prevKey === 'v' && $('.article-header a[rel=prev]').length === 1) {
+                window.location = $('.article-header a[rel=prev]').attr('href');
             }
             return false;
         }).bind('keyup', 'n', function assets() {
             // v n 跳转到下一篇帖子 next
-            if (Util.prevKey === 'v' && $('.article-info-action a[rel=next]').length === 1) {
-                window.location = $('.article-info-action a[rel=next]').attr('href');
+            if (Util.prevKey === 'v' && $('.article-header a[rel=next]').length === 1) {
+                window.location = $('.article-header a[rel=next]').attr('href');
             }
             return false;
         });
@@ -261,14 +297,10 @@ var Comment = {
      * @returns {Boolean}
      */
     init: function () {
-        $("#comments").on('dblclick', 'img', function () {
-            window.open($(this).attr('src'));
-        });
-
         if ($(window.location.hash).length === 1) {
-            if (!isNaN(parseInt(window.location.hash.substr(1)))) {
+            // if (!isNaN(parseInt(window.location.hash.substr(1)))) {
                 Comment._bgFade($(window.location.hash));
-            }
+            //}
         }
 
         this._setCmtVia();
@@ -278,6 +310,22 @@ var Comment = {
         $.ua.set(navigator.userAgent);
 
         this._initHotKey();
+
+        $.pjax({
+            selector: '.pagination a',
+            container: '#comments',
+            show: '',
+            cache: false,
+            storage: true,
+            titleSuffix: ''
+        });
+        NProgress.configure({ showSpinner: false });
+        $('#comments').bind('pjax.start', function(){
+            NProgress.start();
+        });
+        $('#comments').bind('pjax.end', function(){
+            NProgress.done();
+        });
 
         if (!Label.isLoggedIn) {
             return false;
@@ -307,18 +355,15 @@ var Comment = {
                 toolbar: [
                     {name: 'bold'},
                     {name: 'italic'},
-                    '|',
                     {name: 'quote'},
                     {name: 'unordered-list'},
                     {name: 'ordered-list'},
-                    '|',
                     {name: 'link'},
                     {name: 'image', html: '<form id="fileUpload" method="POST" enctype="multipart/form-data"><label class="icon-upload"><input type="file"/></label></form>'},
-                    '|',
                     {name: 'redo'},
                     {name: 'undo'},
-                    '|',
-                    {name: 'preview'},
+                    {name: 'view'},
+                    {name: 'question', action: 'https://hacpai.com/guide/markdown'},
                     {name: 'fullscreen'}
                 ],
                 extraKeys: {
@@ -686,12 +731,12 @@ var Comment = {
             success: function (result, textStatus) {
                 $(".form button.red").removeAttr("disabled").css("opacity", "1");
 
-                if (result.sc) {
+                if (0 === result.sc) {
                     // reset comment editor
                     Comment.editor.setValue('');
                     $('.editor-preview').html('');
-                    if ($('.icon-preview').hasClass('active')) {
-                        $('.icon-preview').click();
+                    if ($('.icon-view').hasClass('active')) {
+                        $('.icon-view').click();
                     }
 
                     // hide comment panel
@@ -712,9 +757,9 @@ var Comment = {
                     // 定为到回贴位置
                     if (Label.userCommentViewMode === 1) {
                         // 实时模式
-                        window.location.hash = '#comments';
+                        Comment._bgFade($('#comments'));
                     } else {
-                        window.location.hash = '#bottomComment';
+                        Comment._bgFade($('#bottomComment'));
                     }
                 } else {
                     $("#addCommentTip").addClass("error").html('<ul><li>' + result.msg + '</li></ul>');
@@ -734,10 +779,14 @@ var Comment = {
      * @param {String} userName 用户名称
      */
     reply: function (userName, id) {
-        if (!Label.isLoggedIn) {
-            Util.needLogin();
-            return false;
-        }
+        Comment._toggleReply(function () {
+            // 回帖在底部，当评论框弹出时会被遮住的解决方案
+            if ($(window).height() - ($('#' + id)[0].offsetTop - $(window).scrollTop() + $('#' + id).outerHeight()) <
+             $('.editor-panel .wrapper').outerHeight()) {
+                $(window).scrollTop($('#' + id)[0].offsetTop -
+                ($(window).height() - $('.editor-panel .wrapper').outerHeight() - $('#' + id).outerHeight()));
+            }
+        });
 
         $.ua.set(navigator.userAgent);
         if ($.ua.device.type === 'mobile') {
@@ -745,23 +794,6 @@ var Comment = {
             Comment.editor.focus();
             return false;
         }
-
-        $('.footer').css('margin-bottom', $('.editor-panel').outerHeight() + 'px');
-
-        // 如果 hide 初始化， focus 无效
-        if ($('.editor-panel').css('bottom') !== '0px') {
-            $('.editor-panel').hide().css('bottom', 0)
-        }
-
-        $('.editor-panel').slideDown(function () {
-            // 回帖在底部，当评论框弹出时会被遮住的解决方案
-            if ($(window).height() - ($('#' + id).offset().top - $(window).scrollTop()) < $('.editor-panel').outerHeight() + $('#' + id).outerHeight()) {
-                $(window).scrollTop($('#' + id).offset().top - ($(window).height() - $('.editor-panel').outerHeight() - $('#' + id).outerHeight()));
-            }
-
-            // focus
-            Comment.editor.focus();
-        });
 
         // 帖子作者 clone 到编辑器左上角
         var replyUserHTML = '',
@@ -784,6 +816,47 @@ var Comment = {
 };
 
 var Article = {
+    initAudio: function () {
+        $('.content-audio').each(function () {
+            var $it = $(this);
+            new APlayer({
+                element: this,
+                narrow: false,
+                autoplay: false,
+                mutex: true,
+                theme: '#4285f4',
+                preload: 'none',
+                mode: 'circulation',
+                music: {
+                    title: $it.data('title'),
+                    author: '<a href="https://hacpai.com/article/1464416402922" target="_blank">音乐分享</a>',
+                    url: $it.data('url'),
+                    pic: Label.staticServePath + '/images/music.png'
+                }
+            });
+        });
+
+        var $articleAudio = $('#articleAudio');
+        if ($articleAudio.length === 0) {
+            return false;
+        }
+
+        new APlayer({
+            element: document.getElementById('articleAudio'),
+            narrow: false,
+            autoplay: false,
+            mutex: true,
+            theme: '#4285f4',
+            mode: 'order',
+            preload: 'none',
+            music: {
+                title: '语音预览',
+                author: '<a href="https://hacpai.com/member/v" target="_blank">小薇</a>',
+                url: $articleAudio.data('url'),
+                pic: Label.staticServePath + '/images/blank.png'
+            }
+        });
+    },
     /**
      * @description 没有权限的提示
      * @param {String} tip 提示内容
@@ -898,22 +971,56 @@ var Article = {
      * @description 初始化文章
      */
     init: function () {
+        this.initToc();
         this.share();
         this.parseLanguage();
 
-        $(".content-reset.article-content").on('dblclick', 'img', function () {
-            if ($(this).hasClass('emoji')) {
+        // img
+        var fixDblclick = null;
+        $(".article").on('dblclick', '.content-reset img', function () {
+            clearTimeout(fixDblclick);
+            if ($(this).hasClass('emoji') || $(this).closest('.editor-panel').length === 1) {
                 return false;
             }
             window.open($(this).attr('src'));
+        }).on('click', 'img', function (event) {
+            clearTimeout(fixDblclick);
+            if ($(this).hasClass('emoji') || $(this).closest('.editor-panel').length === 1) {
+                return false;
+            }
+            var $it = $(this),
+                it = this;
+            fixDblclick = setTimeout(function(){
+                var top = it.offsetTop,
+                    left = it.offsetLeft;
+                if ($it.closest('.comments').length === 1) {
+                    top = top + $it.closest('li')[0].offsetTop;
+                    left = left + $('.comments')[0].offsetLeft + 15;
+                }
+
+                $('body').append('<div class="img-preview" onclick="$(this).remove()"><img style="transform: translate3d(' +
+                left + 'px, ' + (top - $(window).scrollTop()) + 'px, 0)" src="' +
+                ($it.attr('src').split('?imageView2')[0]) + '"></div>');
+
+                $('.img-preview img').css('transform', 'translate3d(' +
+                 (Math.max(0, $(window).width() - it.naturalWidth) / 2) + 'px, ' +
+                 (Math.max(0, $(window).height() - it.naturalHeight) / 2) + 'px, 0)');
+
+                $('.img-preview').css({
+                    'background-color': '#fff',
+                    'position': 'fixed'
+                });
+            }, 100);
         });
 
+        // UA
         var ua = $('#articltVia').data('ua'),
                 name = Util.getDeviceByUa(ua);
         if (name !== '') {
             $('#articltVia').text('via ' + name);
         }
 
+        // his
         $('#revision').dialog({
             "width": $(window).width() - 50,
             "height": $(window).height() - 50,
@@ -921,7 +1028,73 @@ var Article = {
             "hideFooter": true
         });
 
-        this.initToc();
+        this.initAudio();
+
+        // scroll
+        $(window).scroll(function () {
+            var currentScrollTop = $(window).scrollTop();
+
+            // share
+            if (currentScrollTop > 48 && currentScrollTop < $('.comments').offset().top + $('.comments').height()) {
+                $('.share').show();
+            } else {
+                $('.share').hide();
+            }
+        });
+
+        $(window).on('mousewheel DOMMouseScroll', function(e){
+            var currentScrollTop = $(window).scrollTop();
+            if (currentScrollTop < 150) {
+                $('.article-header').css('top', '-56px');
+                return;
+            }
+
+            var eo = e.originalEvent;
+            var xy = eo.wheelDelta || -eo.detail; //shortest possible code
+            var y = eo.wheelDeltaY || (eo.axis === 2 ? xy : 0); // () necessary!
+
+            if (y < 0 && currentScrollTop >= 150) {
+                $('.article-header').css('top', 0);
+            } else if (y > 0) {
+                $('.article-header').css('top', '-56px');
+            }
+
+        });
+
+        // nav
+        window.addEventListener('mousewheel', function(event) {
+            var currentScrollTop = $(window).scrollTop();
+            if (currentScrollTop < 150) {
+                $('.article-header').css('top', '-56px');
+                return false;
+            }
+
+            if (event.deltaY > 0 && currentScrollTop >= 150) {
+                $('.article-header').css('top', 0);
+            } else if (event.deltaY < -5) {
+                $('.article-header').css('top', '-56px');
+            }
+        }, false);
+
+        $(window).resize(function () {
+            var shareL = $('.article-content')[0].offsetLeft / 2 - 15;
+            $('.share').css('left',  (shareL < 0 ? 0 : shareL) + 'px');
+            $('#articleToC > .module-panel').height($(window).height() - 48);
+
+            if ($(window).width() < 1024) {
+                if ($('#articleToC').length === 0) {
+                    return false;
+                }
+                $('.article-body .wrapper').removeAttr('style');
+                return false;
+            }
+
+            if ($('#articleToC').length === 1) {
+                var articleToCW = $('#articleToC').width(),
+                    articleMR = ($(window).width() - articleToCW - $('.article-info').width() - 30) / 3 + articleToCW;
+                $('.article-body .wrapper').css('margin-right', articleMR + 'px');
+            }
+        });
     },
     /**
      * 历史版本对比
@@ -963,7 +1136,8 @@ var Article = {
                                 '\n\n' + result.revisions[result.revisions.length - 2].revisionData.articleContent,
                         revertButtons: false,
                         mode: "text/html",
-                        collapseIdentical: true
+                        collapseIdentical: true,
+                        lineWrapping: true
                     });
                     Article._revisionsControls();
                     return false;
@@ -1022,6 +1196,9 @@ var Article = {
      * @description 分享按钮
      */
     share: function () {
+        var shareL = $('.article-content').offset().left / 2 - 15;
+        $('.share').css('left',  (shareL < 20 ? 20 : shareL) + 'px');
+
         var shareURL = $('#qrCode').data('shareurl');
         $('#qrCode').qrcode({
             width: 90,
@@ -1035,6 +1212,7 @@ var Article = {
 
         $(".share > span").click(function () {
             var key = $(this).data("type");
+            if (!key) return false;
             if (key === 'wechat') {
                 $('#qrCode').slideToggle();
                 return false;
@@ -1046,7 +1224,9 @@ var Article = {
 
             var title = encodeURIComponent(Label.articleTitle + " - " + Label.symphonyLabel),
                     url = encodeURIComponent(shareURL),
-                    pic = $(".content-reset img").attr("src");
+                    picCSS = $(".article-info .avatar-mid").css('background-image');
+                    pic = picCSS.substring(5, picCSS.length - 2);
+
             var urls = {};
             urls.tencent = "http://share.v.t.qq.com/index.php?c=share&a=index&title=" + title +
                     "&url=" + url + "&pic=" + pic;
@@ -1061,23 +1241,12 @@ var Article = {
             $(this).hide();
         });
 
-        if (typeof (ZeroClipboard) !== "undefined") {
-            $('#shareClipboard').mouseover(function () {
-                $(this).attr('aria-label', Label.copyLabel);
-            });
-
-            ZeroClipboard.config({
-                hoverClass: "tooltipped-hover",
-                swfPath: Label.staticServePath + "/js/lib/zeroclipboard/ZeroClipboard.swf"
-            });
-
-            var shareClipboard = new ZeroClipboard(document.getElementById("shareClipboard"));
-            shareClipboard.on("ready", function (readyEvent) {
-                shareClipboard.on("aftercopy", function (event) {
-                    $('#shareClipboard').attr('aria-label', Label.copiedLabel);
-                });
-            });
-        }
+        $('#shareClipboard').mouseover(function () {
+            $(this).attr('aria-label', Label.copyLabel);
+        });
+        Util.clipboard($('#shareClipboard'), $('#shareClipboard').next(), function () {
+            $('#shareClipboard').attr('aria-label', Label.copiedLabel);
+        });
     },
     /*
      * @description 解析语法高亮
@@ -1100,11 +1269,11 @@ var Article = {
                 cache: false,
                 success: function (result, textStatus) {
                     if (result.sc) {
-                        $("#articleRewardContent").removeClass("reward").html(result.articleRewardContent);
+                        $("#articleRewardContent .content-reset").html(result.articleRewardContent);
                         Article.parseLanguage();
 
-                        var cnt = parseInt($('.action-btns .icon-points').parent().text());
-                        $('.action-btns .icon-points').parent().addClass('ft-red')
+                        var cnt = parseInt($('.article-actions .icon-points').parent().text());
+                        $('.article-actions .icon-points').parent().addClass('ft-red')
                         .html('<span class="icon-points"></span> ' + (cnt + 1)).removeAttr('onclick');
                         return;
                     }
@@ -1143,8 +1312,8 @@ var Article = {
             success: function (result, textStatus) {
                 if (result.sc) {
                     var thxCnt = parseInt($('#thankArticle').text());
-                    $("#thankArticle").removeAttr("onclick").html('<span class="icon-heart"></span> ' + (thxCnt + 1))
-                    .addClass('ft-red');
+                    $("#thankArticle").removeAttr("onclick").html('<span class="icon-heart"></span><span class="ft-13">' + (thxCnt + 1) + '</span>')
+                    .addClass('ft-red').removeClass('ft-blue');
 
                     var $heart = $("<i class='icon-heart ft-red'></i>"),
                             y = $('#thankArticle').offset().top,
@@ -1315,7 +1484,6 @@ var Article = {
 
         // set default height
         $('.article-content').html(articleHTML).height($('.article-content').height()).html('');
-        Comment._bgFade($(window.location.hash));
     },
     /**
      * @description 初始化目录.
@@ -1324,26 +1492,20 @@ var Article = {
         if ($('#articleToC').length === 0) {
             return false;
         }
-        $('.side').height($('.side').height());
+
+        var articleToCW = $('#articleToC').width(),
+            articleMR = ($(window).width() - articleToCW - $('.article-info').width() - 30) / 3 + articleToCW;
+        $('.article-body .wrapper').css('margin-right', articleMR + 'px');
+
+        $('#articleToC > .module-panel').height($(window).height() - 48);
 
         // 样式
         var $articleToc = $('#articleToC'),
-                top = $articleToc.offset().top;
-
-        $articleToc.css('width', $('.side').width() + 'px');
-        $articleToc.next().css({
-            'width': $('.side').width() + 'px',
-            'top': ($articleToc.height() + 41) + 'px'
-        });
-        $articleToc.next().next().css({
-            'width': $('.side').width() + 'px',
-            'top': ($articleToc.height() + $articleToc.next().height() + 62) + 'px'
-        });
-
-        $('.article-toc').css({
-            'overflow': 'auto',
-            'max-height': $(window).height() - 80 + 'px'
-        });
+            $articleTocUl = $('.article-toc'),
+            $articleTocs = $('.article-content [id^=toc]'),
+            isUlScroll = false,
+            top = $articleToc.offset().top
+            toc = [];
 
         // 目录点击
         $articleToc.find('li').click(function () {
@@ -1354,57 +1516,59 @@ var Article = {
             }, 50);
         });
 
-        var toc = [];
-        $('.article-content [id^=toc]').each(function (i) {
-            toc.push({
-                id: this.id,
-                offsetTop: this.offsetTop
-            });
-        });
-
         $(window).scroll(function (event) {
-            if ($('#articleToC').css('display') === 'none') {
+            if (parseInt($('#articleToC').css('right')) < 0) {
                 return false;
             }
+            $('#articleToC > .module-panel').height($(window).height() - 49);
+
+            // 界面各种图片加载会导致帖子目录定位
+            toc = [];
+            $articleTocs.each(function (i) {
+                toc.push({
+                    id: this.id,
+                    offsetTop: this.offsetTop
+                });
+            });
 
             // 当前目录样式
             var scrollTop = $(window).scrollTop();
-
             for (var i = 0, iMax = toc.length; i < iMax; i++) {
-                if (scrollTop < toc[i].offsetTop - 5) {
+                if (scrollTop < toc[i].offsetTop - 53) {
                     $articleToc.find('li').removeClass('current');
                     var index = i > 0 ? i - 1 : 0;
-                    $articleToc.find('a[href="#' + toc[index].id + '"]').parent().addClass('current');
+                    $articleToc.find('a[data-id="' + toc[index].id + '"]').parent().addClass('current');
                     break;
                 }
             }
-
-            if (scrollTop >= toc[toc.length - 1].offsetTop - 5) {
+            if (scrollTop >= toc[toc.length - 1].offsetTop - 53) {
                 $articleToc.find('li').removeClass('current');
                 $articleToc.find('li:last').addClass('current');
             }
 
-            // 位置是否固定
-            if ($(window).scrollTop() > top - 20) {
-                $articleToc.css('position', 'fixed');
-                $articleToc.next().css('position', 'fixed');
-                $articleToc.next().next().css('position', 'fixed');
-            } else {
-                $articleToc.css('position', 'initial');
-                $articleToc.next().css('position', 'initial');
-                $articleToc.next().next().css('position', 'initial');
+            // auto scroll to current toc
+            var liOffsetTop = $articleToc.find('li.current')[0].offsetTop;
+            if (!isUlScroll) {
+                // down scroll
+                if ($articleTocUl.scrollTop() < liOffsetTop - $articleTocUl.height() + 30) {
+                    $articleTocUl.scrollTop(liOffsetTop - $articleTocUl.height() + 30);
+                }
+                // up scroll
+                if ($articleTocUl.scrollTop() > liOffsetTop - 30) {
+                    $articleTocUl.scrollTop(liOffsetTop);
+                }
             }
-        }).resize(function () {
-            $articleToc.css('width', $('.side').width() + 'px');
-            $articleToc.next().css({
-                'width': $('.side').width() + 'px'
-            });
-            $articleToc.next().next().css({
-                'width': $('.side').width() + 'px'
-            });
+            // 在目录上滚动到边界时，会滚动 window，为了不让 window 滚动触发目录滚动。
+            setTimeout(function () {
+                isUlScroll = false;
+            }, 600);
         });
 
         $(window).scroll();
+
+        $articleTocUl.scrollTop($articleToc.find('li.current')[0].offsetTop).scroll(function () {
+            isUlScroll = true;
+        });
     },
     /**
      * @description 目录展现隐藏切换.
@@ -1415,26 +1579,18 @@ var Article = {
             return false;
         }
 
-        var $menu = $('.action-btns .icon-unordered-list');
+        var $menu = $('.article-header .icon-unordered-list');
         if ($menu.hasClass('ft-red')) {
-            $articleToc.hide();
+            $articleToc.animate({
+                right: '-300px'
+            });
             $menu.removeClass('ft-red');
-            $articleToc.css('position', 'initial');
-            $articleToc.next().css('position', 'initial');
-            $articleToc.next().next().css('position', 'initial');
-            $('.side').height('auto');
         } else {
-            $articleToc.show();
+            $articleToc.animate({
+                right: 0
+            });
             $menu.addClass('ft-red');
-            if ($(window).scrollTop() > $('#articleToC').offset().top - 20) {
-                $articleToc.css('position', 'fixed');
-                $articleToc.next().css('position', 'fixed');
-                $articleToc.next().next().css('position', 'fixed');
-            }
-            $('.side').height($('.side').height());
         }
-
-
     },
     /**
      * @description 标记消息通知为已读状态.
@@ -1455,3 +1611,31 @@ var Article = {
 };
 
 Article.init();
+
+$(document).ready(function () {
+    Comment.init();
+    // jQuery File Upload
+    Util.uploadFile({
+        "type": "img",
+        "id": "fileUpload",
+        "pasteZone": $(".CodeMirror"),
+        "qiniuUploadToken": Label.qiniuUploadToken,
+        "editor": Comment.editor,
+        "uploadingLabel": Label.uploadingLabel,
+        "qiniuDomain": Label.qiniuDomain,
+        "imgMaxSize": Label.imgMaxSize,
+        "fileMaxSize": Label.fileMaxSize
+    });
+
+    // Init [Article] channel
+    ArticleChannel.init(Label.articleChannel);
+
+    // make nogification read
+    if (Label.isLoggedIn) {
+        Article.makeNotificationRead(Label.articleOId, Label.notificationCmtIds);
+
+        setTimeout(function() {
+            Util.setUnreadNotificationCount();
+        }, 1000);
+    }
+});
