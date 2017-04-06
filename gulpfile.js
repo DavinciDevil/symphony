@@ -20,7 +20,7 @@
  * 
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.4.3.2, Dec 21, 2016
+ * @version 1.6.3.2, Mar 5, 2017
  */
 
 'use strict';
@@ -91,7 +91,9 @@ gulp.task('build', ['sass', 'clean'], function () {
         './src/main/webapp/js/lib/reconnecting-websocket.min.js',
         './src/main/webapp/js/lib/jquery/jquery.bowknot.min.js',
         './src/main/webapp/js/lib/ua-parser.min.js',
-        './src/main/webapp/js/lib/jquery/jquery.hotkeys.js'];
+        './src/main/webapp/js/lib/jquery/jquery.hotkeys.js',
+        './src/main/webapp/js/lib/jquery/jquery.pjax.js',
+        './src/main/webapp/js/lib/nprogress/nprogress.js'];
     gulp.src(jsCommonLib)
             .pipe(uglify())
             .pipe(concat('libs.min.js'))
@@ -117,7 +119,7 @@ gulp.task('build', ['sass', 'clean'], function () {
         // end jquery.fileupload.min.js
         './src/main/webapp/js/lib/sound-recorder/SoundRecorder.js',
         './src/main/webapp/js/lib/jquery/jquery.qrcode.min.js',
-        './src/main/webapp/js/lib/zeroclipboard/ZeroClipboard.min.js'];
+        './src/main/webapp/js/lib/aplayer/APlayer.min.js'];
     gulp.src(jsArticleLib)
             .pipe(uglify())
             .pipe(concat('article-libs.min.js'))

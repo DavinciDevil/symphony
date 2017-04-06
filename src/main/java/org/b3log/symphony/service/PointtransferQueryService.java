@@ -17,10 +17,6 @@
  */
 package org.b3log.symphony.service;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import javax.inject.Inject;
 import org.b3log.latke.Keys;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
@@ -54,11 +50,16 @@ import org.b3log.symphony.util.Symphonys;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 /**
  * Pointtransfer query service.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.19.2.1, Sep 19, 2016
+ * @version 1.20.2.1, Feb 14, 2017
  * @since 1.3.0
  */
 @Service
@@ -470,6 +471,8 @@ public class PointtransferQueryService {
                     case Pointtransfer.TRANSFER_TYPE_C_BUY_INVITECODE:
                     case Pointtransfer.TRANSFER_TYPE_C_ACTIVITY_EATINGSNAKE:
                     case Pointtransfer.TRANSFER_TYPE_C_ACTIVITY_EATINGSNAKE_COLLECT:
+                    case Pointtransfer.TRANSFER_TYPE_C_ACTIVITY_GOBANG:
+                    case Pointtransfer.TRANSFER_TYPE_C_ACTIVITY_GOBANG_COLLECT:
                         break;
                     case Pointtransfer.TRANSFER_TYPE_C_AT_PARTICIPANTS:
                         final JSONObject comment20 = commentRepository.get(dataId);
@@ -551,6 +554,20 @@ public class PointtransferQueryService {
                                 + addArticleBroadcast.optString(Article.ARTICLE_PERMALINK) + "\">"
                                 + addArticleBroadcast.optString(Article.ARTICLE_TITLE) + "</a>";
                         desTemplate = desTemplate.replace("{article}", addArticleBroadcastLink);
+
+                        break;
+                    case Pointtransfer.TRANSFER_TYPE_C_PERFECT_ARTICLE:
+                        final JSONObject perfectArticle = articleRepository.get(dataId);
+                        if (null == perfectArticle) {
+                            desTemplate = langPropsService.get("removedLabel");
+
+                            break;
+                        }
+
+                        final String perfectArticleLink = "<a href=\""
+                                + perfectArticle.optString(Article.ARTICLE_PERMALINK) + "\">"
+                                + perfectArticle.optString(Article.ARTICLE_TITLE) + "</a>";
+                        desTemplate = desTemplate.replace("{article}", perfectArticleLink);
 
                         break;
                     default:

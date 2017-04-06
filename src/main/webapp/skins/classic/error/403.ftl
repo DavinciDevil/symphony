@@ -13,7 +13,7 @@
             <div class="wrapper">
                 <div class="module">
                     <h2 class="sub-head">${reloginLabel}</h2>
-                    <div class="slogan">
+                    <div class="need-login">
                         <button onclick="Util.goLogin()" class="red">${loginLabel}</button> &nbsp;
                         <button onclick="Util.goRegister()" class="green">${nowLabel}${registerLabel}</button>
                         &nbsp; &nbsp; &nbsp; &nbsp;
@@ -28,13 +28,15 @@
                     </div>
                 </div>
             </div>
+            <br>
+            <br>
             <div class="wrapper">
                 <div class="content">
                     <div class="module">
                         <#if timelines?size <= 0>
                         <div id="emptyTimeline" class="no-list">${emptyTimelineLabel}</div>
                         </#if>
-                        <div class="list timeline ft-gray single-line">
+                        <div class="list timeline ft-gray single-line<#if timelines?size <= 0> fn-none</#if>">
                             <ul>
                                 <#list timelines as timeline>
                                 <li>${timeline.content}</li>
@@ -51,9 +53,8 @@
         <#include '../footer.ftl'/>
         <script src="${staticServePath}/js/channel${miniPostfix}.js?${staticResourceVersion}"></script>
         <script>
-                            // Init [Timeline] channel
-                            TimelineChannel.init("${wsScheme}://${serverHost}:${serverPort}${contextPath}/timeline-channel", 20);
+            // Init [Timeline] channel
+            TimelineChannel.init("${wsScheme}://${serverHost}:${serverPort}${contextPath}/timeline-channel", 20);
         </script>
-
     </body>
 </html>

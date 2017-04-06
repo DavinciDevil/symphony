@@ -1,6 +1,6 @@
 <img src="https://cloud.githubusercontent.com/assets/873584/19897669/e6a6f5ce-a093-11e6-8cf3-8e5c2acea033.png">  
 
-<p align = "center">
+<p align="center">
 <a href="https://github.com/b3log/symphony/blob/master/README.md"><strong>English</strong></a> | <a href="https://github.com/b3log/symphony/blob/master/README_zh_CN.md"><strong>中文</strong></a>
 </p>
 
@@ -75,6 +75,7 @@ Personal maintenance:
 * [贵州IT](http://www.gzit.info)
 * [超级产品经理](https://imspm.com)
 * [Titandb 学习主站](https://titandb.cn)
+* [呆萌狮 - Demo's](http://www.daimengshi.com)
 
 Company maintenance:
 
@@ -252,7 +253,6 @@ Record the achievements of the users and the contribution to the community.
 1. [Download](https://github.com/b3log/symphony/archive/master.zip) source code
 2. to modify the database after extracting `src/main/resources/local.properties` configuration, and create a database
 3. _may_ need to modify the `latke.properties` port for container port
-4. _may_ need to modify the `init.properties` administrator account
 3. use `mvn install` to build
 4. to deploy the war package to the container, the database table will be created automatically at the start of the first
 

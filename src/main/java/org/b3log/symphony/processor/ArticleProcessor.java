@@ -49,10 +49,7 @@ import org.b3log.symphony.processor.advice.validate.ArticleAddValidation;
 import org.b3log.symphony.processor.advice.validate.ArticleUpdateValidation;
 import org.b3log.symphony.processor.advice.validate.UserRegisterValidation;
 import org.b3log.symphony.service.*;
-import org.b3log.symphony.util.Emotions;
-import org.b3log.symphony.util.Markdowns;
-import org.b3log.symphony.util.Sessions;
-import org.b3log.symphony.util.Symphonys;
+import org.b3log.symphony.util.*;
 import org.json.JSONObject;
 
 import javax.imageio.ImageIO;
@@ -97,7 +94,7 @@ import java.util.List;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
- * @version 1.24.25.36, Jan 18, 2017
+ * @version 1.25.27.43, Mar 29, 2017
  * @since 0.2.0
  */
 @RequestProcessor
@@ -229,31 +226,74 @@ public class ArticleProcessor {
     @After(adviceClass = {StopwatchEndAdvice.class})
     public void checkArticleTitle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
             throws Exception {
+        final JSONObject currentUser = (JSONObject) request.getAttribute(User.USER);
+        final String currentUserId = currentUser.optString(Keys.OBJECT_ID);
         final JSONObject requestJSONObject = Requests.parseRequestJSONObject(request, context.getResponse());
         String title = requestJSONObject.optString(Article.ARTICLE_TITLE);
         title = StringUtils.trim(title);
+        String id = requestJSONObject.optString(Article.ARTICLE_T_ID);
 
         final JSONObject article = articleQueryService.getArticleByTitle(title);
-
         if (null == article) {
             context.renderJSON(true);
 
             return;
         }
 
-        final String authorId = article.optString(Article.ARTICLE_AUTHOR_ID);
-        final JSONObject author = userQueryService.getUser(authorId);
-        final String userName = author.optString(User.USER_NAME);
-        String msg = langPropsService.get("duplicatedArticleTitleLabel");
-        msg = msg.replace("{user}", "<a target='_blank' href='/member/" + userName + "'>" + userName + "</a>");
-        msg = msg.replace("{article}", "<a target='_blank' href='/article/" + article.optString(Keys.OBJECT_ID)
-                + "'>" + title + "</a>");
+        if (StringUtils.isBlank(id)) { // Add
+            final String authorId = article.optString(Article.ARTICLE_AUTHOR_ID);
 
-        final JSONObject ret = new JSONObject();
-        ret.put(Keys.STATUS_CODE, false);
-        ret.put(Keys.MSG, msg);
+            String msg;
+            if (authorId.equals(currentUserId)) {
+                msg = langPropsService.get("duplicatedArticleTitleSelfLabel");
+                msg = msg.replace("{article}", "<a target='_blank' href='/article/" + article.optString(Keys.OBJECT_ID)
+                        + "'>" + title + "</a>");
+            } else {
+                final JSONObject author = userQueryService.getUser(authorId);
+                final String userName = author.optString(User.USER_NAME);
 
-        context.renderJSON(ret);
+                msg = langPropsService.get("duplicatedArticleTitleLabel");
+                msg = msg.replace("{user}", "<a target='_blank' href='/member/" + userName + "'>" + userName + "</a>");
+                msg = msg.replace("{article}", "<a target='_blank' href='/article/" + article.optString(Keys.OBJECT_ID)
+                        + "'>" + title + "</a>");
+            }
+
+            final JSONObject ret = new JSONObject();
+            ret.put(Keys.STATUS_CODE, false);
+            ret.put(Keys.MSG, msg);
+
+            context.renderJSON(ret);
+        } else { // Update
+            final JSONObject oldArticle = articleQueryService.getArticle(id);
+            if (oldArticle.optString(Article.ARTICLE_TITLE).equals(title)) {
+                context.renderJSON(true);
+
+                return;
+            }
+
+            final String authorId = article.optString(Article.ARTICLE_AUTHOR_ID);
+
+            String msg;
+            if (authorId.equals(currentUserId)) {
+                msg = langPropsService.get("duplicatedArticleTitleSelfLabel");
+                msg = msg.replace("{article}", "<a target='_blank' href='/article/" + article.optString(Keys.OBJECT_ID)
+                        + "'>" + title + "</a>");
+            } else {
+                final JSONObject author = userQueryService.getUser(authorId);
+                final String userName = author.optString(User.USER_NAME);
+
+                msg = langPropsService.get("duplicatedArticleTitleLabel");
+                msg = msg.replace("{user}", "<a target='_blank' href='/member/" + userName + "'>" + userName + "</a>");
+                msg = msg.replace("{article}", "<a target='_blank' href='/article/" + article.optString(Keys.OBJECT_ID)
+                        + "'>" + title + "</a>");
+            }
+
+            final JSONObject ret = new JSONObject();
+            ret.put(Keys.STATUS_CODE, false);
+            ret.put(Keys.MSG, msg);
+
+            context.renderJSON(ret);
+        }
     }
 
     /**
@@ -491,9 +531,10 @@ public class ArticleProcessor {
             dataModel.put(Article.ARTICLE_TYPE, articleType);
         }
 
-        final String at = request.getParameter(Common.AT);
+        String at = request.getParameter(Common.AT);
+        at = StringUtils.trim(at);
         if (StringUtils.isNotBlank(at)) {
-            dataModel.put(Common.AT, at);
+            dataModel.put(Common.AT, at + " ");
         }
 
         dataModelService.fillHeaderAndFooter(request, response, dataModel);
@@ -780,6 +821,12 @@ public class ArticleProcessor {
 
             referralMgmtService.updateReferral(referral);
         }
+
+        if (StringUtils.isBlank(article.optString(Article.ARTICLE_AUDIO_URL))) {
+            final String uid = StringUtils.isBlank(currentUserId) ? "visitor" : currentUserId;
+
+            articleMgmtService.genArticleAudio(article, uid);
+        }
     }
 
     /**
@@ -855,9 +902,6 @@ public class ArticleProcessor {
 
             article.put(Article.ARTICLE_AUTHOR_ID, currentUser.optString(Keys.OBJECT_ID));
 
-            final String authorEmail = currentUser.optString(User.USER_EMAIL);
-            article.put(Article.ARTICLE_AUTHOR_EMAIL, authorEmail);
-
             if (!Role.ROLE_ID_C_ADMIN.equals(currentUser.optString(User.USER_ROLE))) {
                 articleTags = articleMgmtService.filterReservedTags(articleTags);
             }
@@ -873,14 +917,16 @@ public class ArticleProcessor {
             article.put(Article.ARTICLE_TAGS, articleTags);
             article.put(Article.ARTICLE_T_IS_BROADCAST, false);
 
-            articleMgmtService.addArticle(article);
+            final String articleId = articleMgmtService.addArticle(article);
 
-            context.renderTrueResult();
+            context.renderJSONValue(Keys.STATUS_CODE, StatusCodes.SUCC);
+            context.renderJSONValue(Article.ARTICLE_T_ID, articleId);
         } catch (final ServiceException e) {
             final String msg = e.getMessage();
             LOGGER.log(Level.ERROR, "Adds article[title=" + articleTitle + "] failed: {0}", e.getMessage());
 
             context.renderMsg(msg);
+            context.renderJSONValue(Keys.STATUS_CODE, StatusCodes.ERR);
         }
     }
 
@@ -1047,9 +1093,6 @@ public class ArticleProcessor {
 
         article.put(Article.ARTICLE_AUTHOR_ID, currentUser.optString(Keys.OBJECT_ID));
 
-        final String authorEmail = currentUser.optString(User.USER_EMAIL);
-        article.put(Article.ARTICLE_AUTHOR_EMAIL, authorEmail);
-
         if (!Role.ROLE_ID_C_ADMIN.equals(currentUser.optString(User.USER_ROLE))) {
             articleTags = articleMgmtService.filterReservedTags(articleTags);
         }
@@ -1065,14 +1108,16 @@ public class ArticleProcessor {
         article.put(Article.ARTICLE_TAGS, articleTags);
 
         try {
-
             articleMgmtService.updateArticle(article);
-            context.renderTrueResult();
+
+            context.renderJSONValue(Keys.STATUS_CODE, StatusCodes.SUCC);
+            context.renderJSONValue(Article.ARTICLE_T_ID, id);
         } catch (final ServiceException e) {
             final String msg = e.getMessage();
             LOGGER.log(Level.ERROR, "Adds article[title=" + articleTitle + "] failed: {0}", e.getMessage());
 
             context.renderMsg(msg);
+            context.renderJSONValue(Keys.STATUS_CODE, StatusCodes.ERR);
         }
     }
 
@@ -1181,7 +1226,6 @@ public class ArticleProcessor {
         article.put(Article.ARTICLE_SYNC_TO_CLIENT, true);
         article.put(Article.ARTICLE_CLIENT_ARTICLE_ID, clientArticleId);
         article.put(Article.ARTICLE_AUTHOR_ID, authorId);
-        article.put(Article.ARTICLE_AUTHOR_EMAIL, clientAdminEmail.toLowerCase().trim());
 
         final String permalink = originalArticle.optString(Article.ARTICLE_PERMALINK);
 
@@ -1379,7 +1423,6 @@ public class ArticleProcessor {
         article.put(Article.ARTICLE_SYNC_TO_CLIENT, false);
         article.put(Article.ARTICLE_CLIENT_ARTICLE_ID, clientArticleId);
         article.put(Article.ARTICLE_AUTHOR_ID, authorId);
-        article.put(Article.ARTICLE_AUTHOR_EMAIL, clientAdminEmail.toLowerCase().trim());
         article.put(Article.ARTICLE_T_IS_BROADCAST, false);
         article.put(Article.ARTICLE_CLIENT_ARTICLE_PERMALINK, clientHost + permalink);
 
@@ -1465,8 +1508,8 @@ public class ArticleProcessor {
 
         final Set<String> userNames = userQueryService.getUserNames(markdownText);
         for (final String userName : userNames) {
-            markdownText = markdownText.replace('@' + userName, "@<a href='" + Latkes.getServePath()
-                    + "/member/" + userName + "'>" + userName + "</a>");
+            markdownText = markdownText.replace('@' + userName + " ", "@<a href='" + Latkes.getServePath()
+                    + "/member/" + userName + "'>" + userName + "</a> ");
         }
         markdownText = markdownText.replace("@participants ",
                 "@<a href='https://hacpai.com/article/1458053458339' class='ft-red'>participants</a> ");
@@ -1477,6 +1520,7 @@ public class ArticleProcessor {
         markdownText = Emotions.convert(markdownText);
         markdownText = Markdowns.toHTML(markdownText);
         markdownText = Markdowns.clean(markdownText, "");
+        markdownText = MP3Players.render(markdownText);
 
         context.renderJSONValue("html", markdownText);
     }

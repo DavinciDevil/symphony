@@ -15,11 +15,10 @@
             <div class="wrapper">
                 <div class="content chat-room">
                     <div class="module">
-                        <div class="sub-head">
-                            <h2 class="fn-inline">${communityDynamicLabel}</h2><span class="ft-gray">${communityDynamicSubLabel}</span>
-                        </div>
-                        <br>
-                        <div class="form fn-m10">
+                        <h2 class="sub-head">${communityDynamicLabel}
+                            <span class="ft-gray ft-13">${communityDynamicSubLabel}</span>
+                        </h2>
+                        <div class="form fn-content">
                             <div class="reply">
                                 <#if isLoggedIn>
                                 <textarea id="chatContent" rows="10" placeholder="Say sth...."></textarea>
@@ -35,7 +34,6 @@
                                 </div>
                                 </#if>
                             </div>
-                            <br>
                         </div>
                     </div>
                     <div class="list module" id="comments">
@@ -91,15 +89,15 @@
             ChatRoomChannel.init("${wsScheme}://${serverHost}:${serverPort}${contextPath}/chat-room-channel");
             var chatRoomMsgCnt = ${chatRoomMsgCnt};
             Util.uploadFile({
-            "type": "img",
-                    "id": "fileUpload",
-                    "pasteZone": $(".CodeMirror"),
-                    "editor": ChatRoom.editor,
-                    "qiniuUploadToken": "${qiniuUploadToken}",
-                    "uploadingLabel": "${uploadingLabel}",
-                    "qiniuDomain": "${qiniuDomain}",
-                    "imgMaxSize": ${imgMaxSize?c},
-                    "fileMaxSize": ${fileMaxSize?c}
+                "type": "img",
+                "id": "fileUpload",
+                "pasteZone": $(".CodeMirror"),
+                "editor": ChatRoom.editor,
+                "qiniuUploadToken": "${qiniuUploadToken}",
+                "uploadingLabel": "${uploadingLabel}",
+                "qiniuDomain": "${qiniuDomain}",
+                "imgMaxSize": ${imgMaxSize?c},
+                "fileMaxSize": ${fileMaxSize?c}
             });
         </script>
     </body>

@@ -47,7 +47,12 @@
         <@head title="${anonymousCommentLabel} - ${user.userName} - ${symphonyLabel}">
         <meta name="description" content="${user.userName}${deLabel}${settingsLabel}"/>
         </@head>
+        <#elseif type == "linkForge">
+        <@head title="${linkForgeLabel} - ${user.userName} - ${symphonyLabel}">
+        <meta name="description" content="${user.userName}${deLabel}${linkForgeLabel}"/>
+        </@head>
         </#if>
+        <link rel="stylesheet" href="${staticServePath}/js/lib/highlight.js-9.6.0/styles/github.css">
     </head>
     <body>
         <#include "../header.ftl">
@@ -77,6 +82,8 @@
                     ${anonymousLabel}${cmtLabel}
                     <#elseif type == "settings">
                     ${settingsLabel}
+                    <#elseif type == "linkForge">
+                    ${linkForgeLabel}
                     </#if>
                     <span class="icon-chevron-down fn-right"></span>
                 </div>
@@ -106,6 +113,9 @@
                     <li<#if type == "points"> class="fn-none"</#if>>
                         <a href="${servePath}/member/${user.userName}/points">${pointLabel}</a>
                     </li>
+                    <li<#if type == "linkForge"> class="fn-none"</#if>>
+                    <a href="${servePath}/member/${user.userName}/forge/link">${linkForgeLabel}</a>
+                    </li>
                     <#if currentUser?? && currentUser.userName == user.userName>
                     <li<#if type == "articlesAnonymous"> class="current"</#if>>
                         <a href="${servePath}/member/${user.userName}/articles/anonymous">${anonymousArticleLabel}</a>
@@ -129,22 +139,27 @@
         <#include "../footer.ftl">
         <script src="${staticServePath}/js/settings${miniPostfix}.js?${staticResourceVersion}"></script>
         <script>
-                    Label.followLabel = "${followLabel}";
-                    Label.unfollowLabel = "${unfollowLabel}";
-                    Label.invalidPasswordLabel = "${invalidPasswordLabel}";
-                    Label.amountNotEmpty = "${amountNotEmpty}";
-                    Label.invalidUserNameLabel = "${invalidUserNameLabel}";
-                    Label.loginNameErrorLabel = "${loginNameErrorLabel}";
-                    Label.updateSuccLabel = "${updateSuccLabel}";
-                    Label.transferSuccLabel = "${transferSuccLabel}";
-                    Label.invalidUserURLLabel = "${invalidUserURLLabel}";
-                    Label.tagsErrorLabel = "${tagsErrorLabel}";
-                    Label.invalidUserQQLabel = "${invalidUserQQLabel}";
-                    Label.invalidUserIntroLabel = "${invalidUserIntroLabel}";
-                    Label.invalidUserB3KeyLabel = "${invalidUserB3KeyLabel}";
-                    Label.invalidUserB3ClientURLLabel = "${invalidUserB3ClientURLLabel}";
-                    Label.confirmPwdErrorLabel = "${confirmPwdErrorLabel}";
-                    Label.invalidUserNicknameLabel = "${invalidUserNicknameLabel}";
+            Label.followLabel = "${followLabel}";
+            Label.unfollowLabel = "${unfollowLabel}";
+            Label.invalidPasswordLabel = "${invalidPasswordLabel}";
+            Label.amountNotEmpty = "${amountNotEmpty}";
+            Label.invalidUserNameLabel = "${invalidUserNameLabel}";
+            Label.loginNameErrorLabel = "${loginNameErrorLabel}";
+            Label.updateSuccLabel = "${updateSuccLabel}";
+            Label.transferSuccLabel = "${transferSuccLabel}";
+            Label.invalidUserURLLabel = "${invalidUserURLLabel}";
+            Label.tagsErrorLabel = "${tagsErrorLabel}";
+            Label.invalidUserQQLabel = "${invalidUserQQLabel}";
+            Label.invalidUserIntroLabel = "${invalidUserIntroLabel}";
+            Label.invalidUserB3KeyLabel = "${invalidUserB3KeyLabel}";
+            Label.invalidUserB3ClientURLLabel = "${invalidUserB3ClientURLLabel}";
+            Label.confirmPwdErrorLabel = "${confirmPwdErrorLabel}";
+            Label.invalidUserNicknameLabel = "${invalidUserNicknameLabel}";
+            Label.forgeUploadSuccLabel = "${forgeUploadSuccLabel}";
+            Label.type = '${type}';
+            Label.userName = '${user.userName}';
+
+            Settings.initHome();
         </script>
     </body>
 </html>

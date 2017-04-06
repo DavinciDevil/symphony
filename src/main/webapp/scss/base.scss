@@ -20,7 +20,7 @@
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 2.28.19.53, Jan 20, 2017
+ * @version 2.33.21.60, Apr 4, 2017
  */
 
 @import "variables";
@@ -46,17 +46,6 @@ body {
 ::selection {
     text-shadow: none;
     background: rgba(66, 133, 244,0.4)
-}
-
-@font-face {
-    font-family: 'icomoon';
-    src:url('fonts/icomoon.eot?1450');
-    src:url('fonts/icomoon.eot?#iefix') format('embedded-opentype'),
-        url('fonts/icomoon.ttf?1450') format('truetype'),
-        url('fonts/icomoon.woff?1450') format('woff'),
-        url('fonts/icomoon.svg#icomoon') format('svg');
-    font-weight: normal;
-    font-style: normal;
 }
 
 ul,
@@ -227,8 +216,9 @@ blockquote {
     font-family: $font-family-base;
     word-wrap: break-word;
     overflow: auto;
-    line-height: 1.5;
+    line-height: 1.65;
     font-size: 16px;
+    word-break: break-all;
 
     ul,
     ol {
@@ -239,6 +229,16 @@ blockquote {
 
     li {
         margin-top: 0.25em;
+    }
+
+    img {
+        cursor: zoom-in;
+    }
+
+    @at-root .editor-panel .content-reset img,
+    img.emoji
+    {
+        cursor: auto;
     }
 
     h1,
@@ -439,8 +439,8 @@ blockquote {
     height: 5px;
 }
 
-.fn-m10 {
-    margin: 0 10px;
+.fn-content {
+    padding: 15px 30px;
 }
 
 .fn-inline {
@@ -505,9 +505,12 @@ blockquote {
 }
 
 .sub-head {
-    padding: 5px 10px;
+    padding: 15px;
     border-bottom: 1px solid #e5e5e5;
     line-height: 31px;
+    /* margin: 15px; */
+    font-size: 24px;
+    color: #666;
 }
 /* end function */
 
@@ -805,19 +808,6 @@ button.mid,
 /* end button */
 
 /* start icon */
-[class^="icon-"], [class*=" icon-"] {
-    font-family: 'icomoon';
-    speak: none;
-    font-style: normal;
-    font-weight: normal;
-    font-variant: normal;
-    text-transform: none;
-    line-height: 1;
-    /* Better Font Rendering =========== */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
 a[class^="icon-"],
 a[class*=" icon-"] {
     color: #333;
@@ -829,23 +819,61 @@ a[class*=" icon-"]:hover {
     color: $blue;
 }
 
+@font-face {
+  font-family: 'icomoon';
+  src:  url('fonts/icomoon.eot?68j667');
+  src:  url('fonts/icomoon.eot?68j667#iefix') format('embedded-opentype'),
+    url('fonts/icomoon.ttf?68j667') format('truetype'),
+    url('fonts/icomoon.woff?68j667') format('woff'),
+    url('fonts/icomoon.svg?68j667#icomoon') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'icomoon' !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-view:before {
+  content: "\e901";
+}
+.icon-star:before {
+  content: "\f006";
+}
+.icon-heart:before {
+  content: "\f08b";
+}
+.icon-thumbs-up:before {
+  content: "\f089";
+}
+.icon-thumbs-down:before {
+  content: "\f08a";
+}
+.icon-chevron-down:before {
+  content: "\f0db";
+}
+.icon-chevron-up:before {
+  content: "\f0dc";
+}
+.icon-chevron-left:before {
+  content: "\f0dd";
+}
+.icon-chevron-right:before {
+  content: "\f0de";
+}
 .icon-history:before {
   content: "\f1db";
-}
-.icon-pin:before {
-  content: "\e90e";
-}
-.icon-upload:before {
-  content: "\f0ee";
-}
-.icon-time:before {
-  content: "\e906";
-}
-.icon-sortasc:before {
-  content: "\e905";
-}
-.icon-locked:before {
-  content: "\e61e";
 }
 .icon-weibo:before {
   content: "\e908";
@@ -913,17 +941,8 @@ a[class*=" icon-"]:hover {
 .icon-code:before {
   content: "\e011";
 }
-.icon-preview:before {
-  content: "\e002";
-}
 .icon-navigation:before {
   content: "\e903";
-}
-.icon-thumbs-down:before {
-  content: "\e901";
-}
-.icon-thumbs-up:before {
-  content: "\e902";
 }
 .icon-video:before {
   content: "\f057";
@@ -933,9 +952,6 @@ a[class*=" icon-"]:hover {
 }
 .icon-article:before {
   content: "\e61d";
-}
-.icon-star:before {
-  content: "\e600";
 }
 .icon-register:before {
   content: "\e602";
@@ -951,9 +967,6 @@ a[class*=" icon-"]:hover {
 }
 .icon-date:before {
   content: "\e608";
-}
-.icon-view:before {
-  content: "\e609";
 }
 .icon-cmts:before {
   content: "\e60a";
@@ -991,12 +1004,6 @@ a[class*=" icon-"]:hover {
 .icon-flag:before {
   content: "\e617";
 }
-.icon-chevron-down:before {
-  content: "\e618";
-}
-.icon-chevron-up:before {
-  content: "\e619";
-}
 .icon-reply-to:before {
   content: "\e620";
 }
@@ -1009,8 +1016,20 @@ a[class*=" icon-"]:hover {
 .icon-compass:before {
   content: "\e61c";
 }
-.icon-heart:before {
-  content: "\e9da";
+.icon-pin:before {
+  content: "\e90e";
+}
+.icon-upload:before {
+  content: "\f0ee";
+}
+.icon-time:before {
+  content: "\e906";
+}
+.icon-sortasc:before {
+  content: "\e905";
+}
+.icon-locked:before {
+  content: "\e61e";
 }
 .icon-google:before {
   content: "\e90d";
@@ -1031,10 +1050,11 @@ a[class*=" icon-"]:hover {
     cursor: pointer;
 }
 
-.go-top {
+.go-top,
+.radio-btn {
     background-color: #f9fafb;
     border-radius: 28px;
-    bottom: 20px;
+    bottom: 15px;
     color: $gray;
     cursor: pointer;
     display: none;
@@ -1043,23 +1063,25 @@ a[class*=" icon-"]:hover {
     text-align: center;
     position: fixed;
     width: 56px;
-    z-index: 50;
+    z-index: 110;
     right: 20px;
     box-shadow: 0 0 4px rgba(0,0,0,.14),0 4px 8px rgba(0,0,0,.28);
     padding-top: 15px;
     box-sizing: border-box;
 }
 
-.go-top:hover {
-    background-color: rgba(0,0,0,.06);
+.go-top:hover,
+.radio-btn:hover {
+    opacity: .84;
 }
 /* end icon */
 
 /* start tip */
 .tip.error {
     color: $red;
-    background-color: #fcdede;
-    border: 1px solid #d2b2b2;
+    background-color: #ffdce0;
+    border: 1px solid rgba(27,31,35,0.15);
+    border-radius: 2px;
 }
 
 .tip ul {
@@ -1068,9 +1090,10 @@ a[class*=" icon-"]:hover {
 }
 
 .tip.succ {
-    background-color: #D4F6FA;
-    border: 1px solid #1D2B3D;
-    color: #1D2B3D;
+    background-color: #dbedff;
+    border: 1px solid rgba(27,31,35,0.15);
+    border-radius: 2px;
+    color: #032f62;
 }
 
 #registerTip,
@@ -1106,6 +1129,12 @@ a[class*=" icon-"]:hover {
 .avatar-small {
     height: 20px;
     width: 20px;
+}
+
+.avatar-mid {
+    height: 60px;
+    width: 60px;
+    margin-right: 15px;
 }
 
 .avatar-big {
@@ -1237,7 +1266,7 @@ a[class*=" icon-"]:hover {
 .pagination a,
 .pagination span,
 .tabs-sub a {
-    line-height: 38px;
+    line-height: 48px;
     text-decoration: none;
     flex: 1;
     text-align: center;
@@ -1339,7 +1368,7 @@ a[class*=" icon-"]:hover {
 
 /* start framework */
 .wrapper {
-    width: 80%;
+    width: 90%;
     margin: 0 auto;
     display: flex;
     min-width: 720px;
@@ -1399,12 +1428,13 @@ a[class*=" icon-"]:hover {
     }
 
     .nav-tabs a:hover svg,
-    .nav-tabs a.selected svg {
+    .nav-tabs a.current svg {
         visibility: visible;
     }
 
-    .nav-tabs > a,
-    .user-nav > a {
+    .nav-tabs a,
+    .user-nav > a,
+    .user-nav > span {
         display: inline-block;
         color: #fff;
         text-decoration: none;
@@ -1412,13 +1442,14 @@ a[class*=" icon-"]:hover {
         padding: 5px 10px;
     }
 
-    .nav-tabs > a:hover,
-    .user-nav > a:hover {
+    .nav-tabs a:hover,
+    .user-nav > a:hover,
+    .user-nav > span:hover {
         color: #FFF;
         text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.3)
     }
 
-    a.selected {
+    a.current {
         border-bottom: 2px solid $red;
         padding-bottom: 3px;
     }
@@ -1458,11 +1489,8 @@ a[class*=" icon-"]:hover {
         color: #222;
     }
 
-    .user-nav > a{
-        font-size: 20px;
-    }
-
     .user-nav > a {
+        font-size: 20px;
         float: left;
     }
 
@@ -1492,8 +1520,8 @@ a[class*=" icon-"]:hover {
         color: #FFFFFF;
     }
 
-    .user-nav a.selected.no-msg,
-    .user-nav a.selected.msg {
+    .user-nav a.current.no-msg,
+    .user-nav a.current.msg {
         animation: none;
         background-color: $red;
         border-bottom: 0;
@@ -1623,11 +1651,11 @@ a[class*=" icon-"]:hover {
     position: relative;
 
     h2 > a {
-        color: #666;
+        color: #333;
     }
 
     h2 > a:hover {
-        color: #333;
+        color: #000;
     }
 }
 
@@ -1662,7 +1690,6 @@ a[class*=" icon-"]:hover {
 
 .cm-s-default.CodeMirror {
     border-radius: 0 0 3px 3px;
-    border: 1px solid #f2f2f2;
     margin-bottom: 20px;
     border-top-width: 0;
     height: 100px;
@@ -1755,7 +1782,7 @@ ul.CodeMirror-hints {
 .module-panel .module-list li {
     border-bottom: 1px dotted $fade;
     list-style: none outside none;
-    padding: 10px 15px;
+    padding: 15px;
     position: relative;
 }
 
@@ -1772,7 +1799,7 @@ ul.CodeMirror-hints {
 }
 
 .module-panel.form {
-    padding: 10px 20px 20px;
+    padding: 15px;
 }
 
 .module-list .slogan {
@@ -1783,7 +1810,7 @@ ul.CodeMirror-hints {
 
 .module-list .title {
     color: #666;
-    margin: 5px 0 5px 30px;
+    margin: 0px 0 0px 30px;
     display: block;
     line-height: 20px;
 }
@@ -1797,7 +1824,7 @@ ul.CodeMirror-hints {
 }
 
 .module-panel.ad {
-    padding: 10px;
+    padding: 15px;
     text-align: center;
 }
 
@@ -1807,6 +1834,7 @@ ul.CodeMirror-hints {
 
 .module-panel.ad img {
     margin-bottom: 5px;
+    margin-top: 5px;
 }
 .module-panel .tags li {
     float: left;
@@ -1928,7 +1956,7 @@ ul.CodeMirror-hints {
     .info {
         position: relative;
         overflow: hidden;
-        height: 38px;
+        height: 48px;
     }
 
     .info button.red {
@@ -1941,7 +1969,7 @@ ul.CodeMirror-hints {
         border-color: #c0372a;
         letter-spacing: 1px;
         line-height: 18px;
-        padding: 10px;
+        padding: 15px;
     }
 
     .info button.red:hover {
@@ -1949,7 +1977,7 @@ ul.CodeMirror-hints {
     }
 
     .info .fn-right {
-        margin: 10px 10px 0 0;
+        margin: 15px 15px 0 0;
     }
 
     .status {
@@ -2040,12 +2068,6 @@ ul.CodeMirror-hints {
 }
 /* end link forge */
 
-/* start top */
-.top .has-view {
-    line-height: 21px;
-}
-/* end top */
-
 /* start responsive */
 .responsive-show {
     display: none;
@@ -2101,3 +2123,37 @@ ul.CodeMirror-hints {
     }
 }
 /* end algolia */
+
+/* start nprogress */
+/* Make clicks pass-through */
+#nprogress {
+  pointer-events: none;
+}
+
+#nprogress .bar {
+  background: #d23f31;
+
+  position: fixed;
+  z-index: 1031;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 2px;
+}
+/* end nprogress */
+
+/* start aplayer */
+.wrapper .aplayer {
+    margin: 0;
+    box-shadow: 0 0 0;
+
+    .aplayer-pic {
+        background-size: cover;
+    }
+
+    svg {
+        vertical-align: initial;
+    }
+}
+/* end aplayer */

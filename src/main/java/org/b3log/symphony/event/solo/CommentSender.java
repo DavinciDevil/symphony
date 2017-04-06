@@ -49,7 +49,7 @@ import org.json.JSONObject;
  * Sends comment to client.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.0.2.5, Aug 10, 2016
+ * @version 1.0.2.7, Feb 16, 2017
  * @since 0.2.0
  */
 public final class CommentSender extends AbstractEventListener<JSONObject> {
@@ -121,19 +121,16 @@ public final class CommentSender extends AbstractEventListener<JSONObject> {
             httpRequest.setURL(new URL(clientURL));
             httpRequest.setRequestMethod(HTTPRequestMethod.PUT);
             final JSONObject requestJSONObject = new JSONObject();
-            final JSONObject comment = new JSONObject(originalComment, new String[]{
-                Comment.COMMENT_AUTHOR_EMAIL,
-                Comment.COMMENT_CONTENT,
-                Keys.OBJECT_ID
-            });
+            final JSONObject comment = new JSONObject();
+
+            comment.put(Keys.OBJECT_ID, originalComment.optString(Keys.OBJECT_ID));
+            comment.put(Comment.COMMENT_CONTENT, originalComment.optString(Comment.COMMENT_CONTENT));
+            comment.put(Comment.COMMENT_T_AUTHOR_EMAIL, commenter.optString(User.USER_EMAIL));
 
             final String authorName = commenter.optString(User.USER_NAME);
             comment.put(Comment.COMMENT_T_AUTHOR_NAME, authorName);
             comment.put(UserExt.USER_B3_KEY, author.optString(UserExt.USER_B3_KEY));
-            String authorURL = commenter.optString(User.USER_URL);
-            if (StringUtils.isBlank(authorURL)) {
-                authorURL = Latkes.getServePath() + "/member/" + authorName;
-            }
+            final String authorURL = Latkes.getServePath() + "/member/" + authorName;
             comment.put(Comment.COMMENT_T_AUTHOR_URL, authorURL);
             comment.put(Comment.COMMENT_ON_ARTICLE_ID, originalArticle.optString(Article.ARTICLE_CLIENT_ARTICLE_ID));
             comment.put(Comment.COMMENT_T_SYMPHONY_ID, originalArticle.optString(Keys.OBJECT_ID));
