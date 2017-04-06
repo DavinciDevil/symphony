@@ -61,7 +61,7 @@
         <servlet-name>DispatcherServlet</servlet-name>
         <url-pattern>/*</url-pattern>
     </servlet-mapping>
-    
+
     <!--
     <servlet>
         <servlet-name>DruidStatView</servlet-name>
@@ -72,7 +72,7 @@
         <url-pattern>/druid/*</url-pattern>
     </servlet-mapping>
     -->
-    
+
     <!-- Error Pages -->
     <error-page>
         <error-code>404</error-code>

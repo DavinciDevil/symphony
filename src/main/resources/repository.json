@@ -9,6 +9,36 @@
     "since": "0.2.0",
     "repositories": [
         {
+            "name": "test",
+            "keys": [
+                {
+                    "name": "oId",
+                    "type": "String",
+                    "length": 19
+                },
+                {
+                    "name": "userId",
+                    "type": "String",
+                    "length": 19
+                },
+                {
+                    "name": "name",
+                    "type": "String",
+                    "length": 19
+                },
+                {
+                    "name": "age",
+                    "type": "String",
+                    "length": 19
+                },
+                {
+                    "name": "addr",
+                    "type": "String",
+                    "length": 19
+                }
+            ]
+        },
+        {
             "name": "user_book_article",
             "keys": [
                 {

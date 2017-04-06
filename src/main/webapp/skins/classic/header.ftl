@@ -53,7 +53,7 @@
             </ul>
         </div>
         <#else>
-        <a href="javascript: Util.goLogin();" class="unlogin">${loginLabel}</a>
+        <a href="javascript:Util.goLogin()" class="unlogin">${loginLabel}</a>
         <a href="javascript:Util.goRegister()" class="unlogin">${registerLabel}</a>
         </#if>
     </div>

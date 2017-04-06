@@ -34,8 +34,8 @@
                             </#list>
                             <#if recentArticles?size == 0>
                                 ${systemEmptyLabel}<br>
-                                ${systemEmptyTipLabel}<br> 
-                                <img src="${staticServePath}/images/404/5.gif"/>          
+                                ${systemEmptyTipLabel}<br>
+                                <img src="${staticServePath}/images/404/5.gif"/>
                             </#if>
                             <li>
                                 <a class="more" href="${servePath}/recent">${moreRecentArticleLabel}</a>
@@ -48,16 +48,16 @@
                             <#if isLoggedIn && followingTagArticles?size == 0>
                                 <li class="ft-center">
                                     ${noFollowingTagLabel}<br>
-                                    ${noFollowingTagTipLabel}<br> 
-                                    <img src="${staticServePath}/images/404/6.gif"/>     
-                                </li>  
+                                    ${noFollowingTagTipLabel}<br>
+                                    <img src="${staticServePath}/images/404/6.gif"/>
+                                </li>
                             </#if>
                             <#if !isLoggedIn>
                                 <li class="ft-center">
                                     ${noLoginLabel}<br>
-                                    ${noLoginTipLabel}<br> 
-                                    <img src="${staticServePath}/images/404/6.gif"/>     
-                                </li>  
+                                    ${noLoginTipLabel}<br>
+                                    <img src="${staticServePath}/images/404/6.gif"/>
+                                </li>
                             </#if>
                             <li>
                                 <a class="more" href="${servePath}/recent">${moreRecentArticleLabel}</a>
@@ -70,16 +70,16 @@
                             <#if isLoggedIn && followingUserArticles?size == 0>
                                 <li class="ft-center">
                                     ${noFollowingUserLabel}<br>
-                                    ${noFollowingUserTipLabel}<br> 
-                                    <img src="${staticServePath}/images/404/2.gif"/>     
-                                </li> 
+                                    ${noFollowingUserTipLabel}<br>
+                                    <img src="${staticServePath}/images/404/2.gif"/>
+                                </li>
                             </#if>
                             <#if !isLoggedIn>
                                 <li class="ft-center">
                                     ${noLoginLabel}<br>
-                                    ${noLoginTipLabel}<br> 
-                                    <img src="${staticServePath}/images/404/2.gif"/>     
-                                </li>   
+                                    ${noLoginTipLabel}<br>
+                                    <img src="${staticServePath}/images/404/2.gif"/>
+                                </li>
                             </#if>
                             <li>
                                 <a class="more" href="${servePath}/recent">${moreRecentArticleLabel}</a>
@@ -131,7 +131,7 @@
                         <div class="metro-item">
                             <a class="preview" href="${servePath}/tag/${tag0.tagURI}">
                                 <img src="${staticServePath}/images/tags/${tag0.tagIconPath}" alt="${tag0.tagTitle}">
-                                <b>${tag0.tagTitle}</b>
+                              <b>${tag0.tagTitle}</b>
                             </a>
                         </div>
                         <div class="metro-item mid">
@@ -230,7 +230,7 @@
             </div>
         </div>
     </div>
-    <#include "footer.ftl">   
+    <#include "footer.ftl">
     <script src="${staticServePath}/js/channel${miniPostfix}.js?${staticResourceVersion}"></script>
     <script type="text/javascript">
         $('.metro-item').height($('.metro-item').width());
@@ -272,7 +272,7 @@
         } else {
             localStorage.setItem('indexTab', 0);
         }
-        
+
 
         // Init [Timeline] channel
         TimelineChannel.init("${wsScheme}://${serverHost}:${serverPort}${contextPath}/timeline-channel", 20);

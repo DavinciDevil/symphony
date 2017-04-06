@@ -193,8 +193,8 @@ public class ActivityQueryService {
                 ret.add(user);
             }
         } catch (final RepositoryException e) {
-            LOGGER.log(Level.ERROR, "Gets top checkin users error", e);
-        }
+                   LOGGER.log(Level.ERROR, "Gets top checkin users error", e);
+    }
 
         return ret;
     }

@@ -79,7 +79,7 @@
                     </ul>
                 </div>
                 <div class="side">
-                    <div class="fn-clear"> 
+                    <div class="fn-clear">
                         <button class="btn orange">${checkinAtOnceLabel}</button>
                         <button class="btn fn-right">${postWorksLabel}</button>
                     </div>
