@@ -16,7 +16,7 @@
             <div class="form fn-flex-1 fn-clear">
                 <input type="text" id="articleTitle" autocomplete="off" tabindex="1"<#if requisite> readonly disabled</#if>
                        value="<#if article??>${article.articleTitle}</#if>" placeholder="${titleLabel}" />
-                <div class="article-content">
+                <div>
                     <textarea id="articleContent" tabindex="2"
                               placeholder="<#if !article?? && 1 == articleType>${addDiscussionEditorPlaceholderLabel}</#if>${addArticleEditorPlaceholderLabel}"><#if article??>${article.articleContent?html}</#if><#if at??>@${at}</#if></textarea>
                 </div>
@@ -126,11 +126,12 @@
                         </#if>
 
                         <#if article??>
-                            <#if permissions["commonAddArticle"].permissionGrant>
-                            <button class="red" tabindex="10"<#if requisite> readonly disabled</#if> onclick="AddArticle.add('${csrfToken}')">${submitLabel}</button>
+                            <#if permissions["commonUpdateArticle"].permissionGrant>
+                            <button class="red" tabindex="10"<#if requisite> readonly disabled</#if>
+                                onclick="AddArticle.add('${csrfToken}')">${submitLabel}</button>
                             </#if>
                         <#else>
-                            <#if permissions["commonUpdateArticle"].permissionGrant>
+                            <#if permissions["commonAddArticle"].permissionGrant>
                             <button class="red" tabindex="10"<#if requisite> readonly disabled</#if>
                                 onclick="AddArticle.add('${csrfToken}')">${postLabel}</button>
                             </#if>
@@ -148,7 +149,7 @@
             Label.articleTitleErrorLabel = "${articleTitleErrorLabel}";
             Label.articleContentErrorLabel = "${articleContentErrorLabel}";
             Label.tagsErrorLabel = "${tagsErrorLabel}";
-            Label.userName = "${userName}";
+            Label.userName = "${currentUser.userName}";
             Label.recordDeniedLabel = "${recordDeniedLabel}";
             Label.recordDeviceNotFoundLabel = "${recordDeviceNotFoundLabel}";
             Label.uploadLabel = "${uploadLabel}";

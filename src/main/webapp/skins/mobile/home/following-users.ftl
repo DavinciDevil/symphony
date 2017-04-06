@@ -7,13 +7,13 @@
         <#list userHomeFollowingUsers as followingUser>
         <li class="fn-flex">
             <a rel="nofollow" title="${followingUser.userName} <#if followingUser.userOnlineFlag>${onlineLabel}<#else>${offlineLabel}</#if>" href="${servePath}/member/${followingUser.userName}">
-                <div class="avatar fn-left" style="background-image:url('${followingUser.userAvatarURL}')"></div>
+                <div class="avatar fn-left" style="background-image:url('${followingUser.userAvatarURL48}')"></div>
             </a>
             <div class="fn-flex-1">
                 <h3 class="fn-inline">
                     <a rel="nofollow" href="${servePath}/member/${followingUser.userName}" >${followingUser.userName}</a>
                 </h3> &nbsp;
-                <#if isLoggedIn && (userName != followingUser.userName)> 
+                <#if isLoggedIn && (currentUser.userName != followingUser.userName)>
                 <#if followingUser.isFollowing>
                 <button class="red small fn-right" onclick="Util.unfollow(this, '${followingUser.oId}', 'user')"> 
                     ${unfollowLabel}
@@ -43,7 +43,7 @@
         </#list>
     </ol>
 </div>
-<@pagination url="/member/${user.userName}/following/users"/>
+<@pagination url="${servePath}/member/${user.userName}/following/users"/>
 <#else>
 <p class="ft-center ft-gray home-invisible">${setinvisibleLabel}</p>
 </#if>

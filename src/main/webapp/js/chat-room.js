@@ -19,7 +19,7 @@
  * @fileoverview 聊天室
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 1.1.0.2, Sep 20, 2016
+ * @version 1.2.2.2, Mar 22, 2017
  */
 
 /**
@@ -62,18 +62,16 @@ var ChatRoom = {
                 toolbar: [
                     {name: 'bold'},
                     {name: 'italic'},
-                    '|',
                     {name: 'quote'},
                     {name: 'unordered-list'},
                     {name: 'ordered-list'},
-                    '|',
                     {name: 'link'},
                     {name: 'image', html: '<form id="fileUpload" method="POST" enctype="multipart/form-data"><label class="icon-upload"><input type="file"/></label></form>'},
-                    '|',
                     {name: 'redo'},
                     {name: 'undo'},
-                    '|',
-                    {name: 'preview'}
+                    {name: 'view'},
+                    {name: 'question', action: 'https://hacpai.com/guide/markdown'},
+                    {name: 'fullscreen'}
                 ],
                 extraKeys: {
                     "Alt-/": "autocompleteUserName",
@@ -167,8 +165,8 @@ var ChatRoom = {
                     ChatRoom.editor.setValue('');
                     // reset comment editor
                     $('.editor-preview').html('');
-                    if ($('.icon-preview').hasClass('active')) {
-                        $('.icon-preview').click();
+                    if ($('.icon-view').hasClass('active')) {
+                        $('.icon-view').click();
                     }
 
                     if (window.localStorage) {

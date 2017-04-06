@@ -17,9 +17,7 @@
                                  aria-label="${activityDailyCheckinLabel}" style="background-image:url('${staticServePath}/images/activities/checkin.png')"></div>
                             ${dailyCheckinLabel}
                         </h2>
-                        <br>
-                        <div id="captcha" class="fn-m10"></div>
-                        <br>
+                        <div id="captcha" class="fn-content"></div>
                     </div>
                 </div>
                 <div class="side">
@@ -35,7 +33,7 @@
                 captchaObj.appendTo("#captcha");
                 captchaObj.onSuccess(function () {
                     var result = captchaObj.getValidate();
-                    window.location.href = "/activity/daily-checkin?geetest_challenge=" + result.geetest_challenge +
+                    window.location.href = "${servePath}/activity/daily-checkin?geetest_challenge=" + result.geetest_challenge +
                             "&geetest_validate=" + result.geetest_validate + "&geetest_seccode=" + result.geetest_seccode;
                 });
             };

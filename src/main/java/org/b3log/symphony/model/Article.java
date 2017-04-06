@@ -21,7 +21,7 @@ package org.b3log.symphony.model;
  * This class defines all article model relevant keys.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.23.0.12, Jan 18, 2017
+ * @version 1.25.0.14, Mar 20, 2017
  * @since 0.2.0
  */
 public final class Article {
@@ -60,11 +60,6 @@ public final class Article {
      * Key of article tags.
      */
     public static final String ARTICLE_TAGS = "articleTags";
-
-    /**
-     * Key of article author email.
-     */
-    public static final String ARTICLE_AUTHOR_EMAIL = "articleAuthorEmail";
 
     /**
      * Key of article author id.
@@ -206,6 +201,11 @@ public final class Article {
      */
     public static final String ARTICLE_ANONYMOUS_VIEW = "articleAnonymousView";
 
+    /**
+     * Key of article audio URL.
+     */
+    public static final String ARTICLE_AUDIO_URL = "articleAudioURL";
+
     //// Transient ////
     /**
      * Key of article latest comment.
@@ -246,6 +246,11 @@ public final class Article {
      * Key of article preview content.
      */
     public static final String ARTICLE_T_PREVIEW_CONTENT = "articlePreviewContent";
+
+    /**
+     * Key of article thumbnail URL.
+     */
+    public static final String ARTICLE_T_THUMBNAIL_URL = "articleThumbnailURL";
 
     /**
      * Key of article view count display format.
@@ -333,6 +338,11 @@ public final class Article {
     public static final String ARTICLE_T_TITLE_EMOJI = "articleTitleEmoj";
 
     /**
+     * Key of article title with Emoji unicode.
+     */
+    public static final String ARTICLE_T_TITLE_EMOJI_UNICODE = "articleTitleEmojUnicode";
+
+    /**
      * Key of article heat.
      */
     public static final String ARTICLE_T_HEAT = "articleHeat";
@@ -418,6 +428,12 @@ public final class Article {
     public static final int ARTICLE_TYPE_C_BOOK = 4;
 
     /**
+     * Private constructor.
+     */
+    private Article() {
+    }
+
+    /**
      * Checks the specified article type is whether invalid.
      *
      * @param articleType the specified article type
@@ -425,11 +441,5 @@ public final class Article {
      */
     public static boolean isInvalidArticleType(final int articleType) {
         return articleType < 0 || articleType > Article.ARTICLE_TYPE_C_BOOK;
-    }
-
-    /**
-     * Private constructor.
-     */
-    private Article() {
     }
 }

@@ -21,7 +21,7 @@
                                              aria-label="${activityDailyCheckinLabel}" style="background-image:url('${staticServePath}/images/activities/checkin.png')"></div>
                                         <div class="fn-flex-1">
                                             <h2>
-                                                <a href="<#if useCaptchaCheckin>/activity/checkin<#else>/activity/daily-checkin</#if>">${activityDailyCheckinLabel}</a>
+                                                <a href="<#if useCaptchaCheckin>${servePath}/activity/checkin<#else>${servePath}/activity/daily-checkin</#if>">${activityDailyCheckinLabel}</a>
                                             </h2>
                                             <span class="ft-fade content-reset">
                                                 每日签到随机获得 <code>[${pointActivityCheckinMin?c}, ${pointActivityCheckinMax?c}]</code>，每连续签到 10 天额外获得 <code>${pointActivityCheckinStreak?c}</code>
@@ -79,6 +79,20 @@
                                             </h2>
                                             <span class="ft-fade content-reset">
                                                 ${activityEatingSnakeTitleLabel}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class='fn-flex'>
+                                        <div class="avatar tooltipped tooltipped-ne"
+                                             aria-label="${gobangLabel}" style="background-image:url('${staticServePath}/images/activities/gobang.png')"></div>
+                                        <div class="fn-flex-1">
+                                            <h2>
+                                                <a href="${servePath}/activity/gobang">${gobangLabel}</a>
+                                            </h2>
+                                            <span class="ft-fade content-reset">
+                                            ${activityGobangTitleLabel}
                                             </span>
                                         </div>
                                     </div>

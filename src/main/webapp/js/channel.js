@@ -20,7 +20,8 @@
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 1.11.16.19, Jan 17, 2017
+ * @author <a href="http://zephyr.b3log.org">Zephyr</a>
+ * @version 1.12.16.19, Mar 27, 2017
  */
 
 /**
@@ -80,8 +81,10 @@ var ArticleChannel = {
                     // ua
                     $("#" + data.commentId + ' .cmt-via').text(Util.getDeviceByUa(data.commentUA));
 
-                    // 回帖高亮
-                    Comment._bgFade($("#" + data.commentId));
+                    // 回帖高亮，他人回帖不定位，只有自己回帖才定位
+                    if (Label.currentUserName === data.commentAuthorName) {
+                        Comment._bgFade($("#" + data.commentId));
+                    }
 
                     // 代码高亮
                     hljs.initHighlighting.called = false;
@@ -236,6 +239,7 @@ var TimelineChannel = {
                 case 'article':
                 case 'comment':
                 case 'activity':
+                    $('.timeline').show();
                     var time = new Date().getTime();
                     var template = "<li class=\"fn-none\" id=" + time + ">" + data.content + "</li>";
                     $(".timeline > ul").prepend(template);
@@ -341,6 +345,53 @@ var ChatRoomChannel = {
         };
 
         ChatRoomChannel.ws.onerror = function (err) {
+            console.log("ERROR", err);
+        };
+    }
+};
+
+/**
+ * @description gobang game channel.
+ * @static
+ */
+var GobangChannel = {
+    /**
+     * WebSocket instance.
+     *
+     * @type WebSocket
+     */
+    ws: undefined,
+    /**
+     * @description Initializes message channel
+     */
+    init: function (channelServer) {
+        GobangChannel.ws = new ReconnectingWebSocket(channelServer);
+        GobangChannel.ws.reconnectInterval = 10000;
+
+        GobangChannel.ws.onopen = function () {
+            setInterval(function () {
+                GobangChannel.ws.send('zephyr test');
+            }, 1000 * 60 * 3);
+        };
+
+        GobangChannel.ws.onmessage = function (evt) {
+            var data = JSON.parse(evt.data);
+
+            switch (data.type) {
+                case "gobangPlayer":
+                    console.log("data.type:>gobangPlayer");
+                    break;
+                case "msg":
+                    console.log("data.type:>msg");
+                    break;
+            }
+        };
+
+        GobangChannel.ws.onclose = function () {
+            GobangChannel.ws.close();
+        };
+
+        GobangChannel.ws.onerror = function (err) {
             console.log("ERROR", err);
         };
     }

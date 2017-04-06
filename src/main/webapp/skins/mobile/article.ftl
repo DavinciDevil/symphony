@@ -12,7 +12,6 @@
         </@head>
         <link rel="stylesheet" href="${staticServePath}/js/lib/highlight.js-9.6.0/styles/github.css">
         <link rel="stylesheet" href="${staticServePath}/js/lib/editor/codemirror.min.css">
-        <link rel="stylesheet" href="${staticServePath}/js/lib/aplayer/APlayer.min.css">
     </head>
     <body itemscope itemtype="http://schema.org/Product">
         <img itemprop="image" class="fn-none"  src="${staticServePath}/images/faviconH.png" />
@@ -24,8 +23,10 @@
                     <span class="fn-right">
                         <span id="thankArticle" aria-label="${thankLabel}"
                               class="tooltipped tooltipped-n has-cnt<#if article.thanked> ft-red</#if>"
-                              <#if !article.thanked && permissions["commonThankArticle"].permissionGrant>
+                              <#if permissions["commonThankArticle"].permissionGrant>
+                              <#if !article.thanked>
                                   onclick="Article.thankArticle('${article.oId}', ${article.articleAnonymous})"
+                              </#if>
                               <#else>
                                   onclick="Article.permissionTip(Label.noPermissionLabel)"
                               </#if>><span class="icon-heart"></span> ${article.thankedCnt}</span>
@@ -142,6 +143,10 @@
                     </div>
                 </div>
 
+                <#if article.articleAudioURL??>
+                    <div id="articleAudio" data-url="${article.articleAudioURL}"
+                         data-author="${article.articleAuthorName}" class="aplayer article-content"></div>
+                </#if>
                 <#if 3 != article.articleType>
                 <div class="content-reset article-content">${article.articleContent}</div>
                 <#else>
@@ -341,7 +346,7 @@
                                     <span class="avatar-small slogan"
                                           style="background-image:url('${relevantArticle.articleAuthorThumbnailURL20}')"></span>
                                     <#if "someone" != relevantArticle.articleAuthorName></a></#if>
-                                <a rel="nofollow" class="title" href="${relevantArticle.articlePermalink}">${relevantArticle.articleTitleEmoj}</a>
+                                <a rel="nofollow" class="title" href="${servePath}${relevantArticle.articlePermalink}">${relevantArticle.articleTitleEmoj}</a>
                             </li>
                             </#list>
                         </ul>
@@ -365,7 +370,7 @@
                                     <span class="avatar-small slogan"
                                           style="background-image:url('${randomArticle.articleAuthorThumbnailURL20}')"></span>
                                     <#if "someone" != randomArticle.articleAuthorName></a></#if>
-                                <a class="title" rel="nofollow" href="${randomArticle.articlePermalink}">${randomArticle.articleTitleEmoj}</a>
+                                <a class="title" rel="nofollow" href="${servePath}${randomArticle.articlePermalink}">${randomArticle.articleTitleEmoj}</a>
                             </li>
                             </#list>
                         </ul>
@@ -378,7 +383,7 @@
             <i class="heat" style="width:${article.articleHeat*3}px"></i>
         </div>
         <#include "footer.ftl">
-        <script src="${staticServePath}/js/lib/compress/article-libs.min.js"></script>
+        <script src="${staticServePath}/js/lib/compress/article-libs.min.js?${staticResourceVersion}"></script>
         <script src="${staticServePath}/js/article${miniPostfix}.js?${staticResourceVersion}"></script>
         <script src="${staticServePath}/js/channel${miniPostfix}.js?${staticResourceVersion}"></script>
         <script>
@@ -415,35 +420,16 @@
             Label.qiniuDomain = '${qiniuDomain}';
             Label.qiniuUploadToken = '${qiniuUploadToken}';
             Label.noPermissionLabel = '${noPermissionLabel}';
+            Label.imgMaxSize = ${imgMaxSize?c};
+            Label.fileMaxSize = ${fileMaxSize?c};
+            Label.articleChannel = "${wsScheme}://${serverHost}:${serverPort}${contextPath}/article-channel?articleId=${article.oId}&articleType=${article.articleType}";
             <#if isLoggedIn>
-                Article.makeNotificationRead('${article.oId}', '${notificationCmtIds}');
-                setTimeout(function() {
-                    Util.setUnreadNotificationCount();
-                }, 1000);
                 Label.currentUserName = '${currentUser.userName}';
-            </#if>            
-            // Init [Article] channel
-            ArticleChannel.init("${wsScheme}://${serverHost}:${serverPort}${contextPath}/article-channel?articleId=${article.oId}&articleType=${article.articleType}");
-            
-            $(document).ready(function () {
-                Comment.init();
-                
-                // jQuery File Upload
-                Util.uploadFile({
-                    "type": "img",
-                    "id": "fileUpload",
-                    "pasteZone": $(".CodeMirror"),
-                    "qiniuUploadToken": "${qiniuUploadToken}",
-                    "editor": Comment.editor,
-                    "uploadingLabel": "${uploadingLabel}",
-                    "qiniuDomain": "${qiniuDomain}",
-                    "imgMaxSize": ${imgMaxSize?c},
-                    "fileMaxSize": ${fileMaxSize?c}
-                });
-            });
+                Label.notificationCmtIds = '${notificationCmtIds}';
+            </#if>
             <#if 3 == article.articleType>
                 Article.playThought('${article.articleContent}');
-            </#if>           
+            </#if>
         </script>
     </body>
 </html>

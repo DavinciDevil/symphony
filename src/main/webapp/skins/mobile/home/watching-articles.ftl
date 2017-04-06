@@ -36,16 +36,16 @@
             </div>
             <#if isLoggedIn>
                 <#if article.isFollowing>
-                    <button class="small fn-right" onclick="Util.unfollow(this, '${article.oId}', 'article-watch')">${followLabel}</button>
+                    <button class="small fn-right" onclick="Util.follow(this, '${article.oId}', 'article-watch')">${followLabel}</button>
                     <#else>
-                    <button class="small fn-right" onclick="Util.follow(this, '${article.oId}', 'article-watch')">${unfollowLabel}</button>
+                    <button class="small fn-right" onclick="Util.unfollow(this, '${article.oId}', 'article-watch')">${unfollowLabel}</button>
                 </#if>
             </#if>
         </li>
         </#list>
     </ul>
 </div>
-<@pagination url="/member/${user.userName}/following/articles"/>
+<@pagination url="${servePath}/member/${user.userName}/following/articles"/>
 <#else>
 <p class="ft-center ft-gray home-invisible">${setinvisibleLabel}</p>
 </#if>

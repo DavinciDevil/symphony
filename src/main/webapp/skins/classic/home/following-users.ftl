@@ -2,11 +2,11 @@
 <#include "../macro-pagination.ftl">
 <@home "${type}">
 <div class="tabs-sub fn-clear">
-    <a href="${servePath}/member/${user.userName}/watching/articles"<#if type == "watchingUsers"> class="current"</#if>>${watchingArticlesLabel}</a>
-    <a href="${servePath}/member/${user.userName}/following/users"<#if type == "followingUsers"> class="current"</#if>>${followingUsersLabel} &nbsp;<span class="count">${paginationRecordCount}</span></a>
-    <a href="${servePath}/member/${user.userName}/following/tags"<#if type == "followingTags"> class="current"</#if>>${followingTagsLabel}</a>
-    <a href="${servePath}/member/${user.userName}/following/articles"<#if type == "followingArticles"> class="current"</#if>>${followingArticlesLabel}</a>
-    <a href="${servePath}/member/${user.userName}/followers"<#if type == "followers"> class="current"</#if>>${followersLabel}</a>
+    <a pjax-title="${watchingArticlesLabel} - ${user.userName} - ${symphonyLabel}" href="${servePath}/member/${user.userName}/watching/articles"<#if type == "watchingUsers"> class="current"</#if>>${watchingArticlesLabel}</a>
+    <a pjax-title="${followingUsersLabel} - ${user.userName} - ${symphonyLabel}" href="${servePath}/member/${user.userName}/following/users"<#if type == "followingUsers"> class="current"</#if>>${followingUsersLabel} &nbsp;<span class="count">${paginationRecordCount}</span></a>
+    <a pjax-title="${followingTagsLabel} - ${user.userName} - ${symphonyLabel}" href="${servePath}/member/${user.userName}/following/tags"<#if type == "followingTags"> class="current"</#if>>${followingTagsLabel}</a>
+    <a pjax-title="${followingArticlesLabel} - ${user.userName} - ${symphonyLabel}" href="${servePath}/member/${user.userName}/following/articles"<#if type == "followingArticles"> class="current"</#if>>${followingArticlesLabel}</a>
+    <a pjax-title="${followersLabel} - ${user.userName} - ${symphonyLabel}" href="${servePath}/member/${user.userName}/followers"<#if type == "followers"> class="current"</#if>>${followersLabel}</a>
 </div>
 <#if 0 == user.userFollowingUserStatus || (isLoggedIn && ("adminRole" == currentUser.userRole || currentUser.userName == user.userName))>
 <div class="follow list">
@@ -22,7 +22,7 @@
                    href="${servePath}/member/${followingUser.userName}">
                     <div class="avatar fn-left tooltipped tooltipped-se" 
                          aria-label="${followingUser.userName} <#if followingUser.userOnlineFlag>${onlineLabel}<#else>${offlineLabel}</#if>" 
-                         style="background-image:url('${followingUser.userAvatarURL}')"></div>
+                         style="background-image:url('${followingUser.userAvatarURL48}')"></div>
                 </a>
                 <div class="fn-flex-1">
                     <h2 class="fn-inline">
@@ -31,7 +31,7 @@
                     <#if followingUser.userNickname != ''>
                     <a class='ft-fade' rel="nofollow" href="${servePath}/member/${followingUser.userName}" >${followingUser.userName}</a>
                     </#if>
-                    <#if isLoggedIn && (userName != followingUser.userName)> 
+                    <#if isLoggedIn && (currentUser.userName != followingUser.userName)>
                     <#if followingUser.isFollowing>
                     <button class="fn-right mid" onclick="Util.unfollow(this, '${followingUser.oId}', 'user')"> 
                         ${unfollowLabel}
@@ -62,7 +62,7 @@
         </#list>
     </ul>
 </div>
-<@pagination url="/member/${user.userName}/following/users"/>
+<@pagination url="${servePath}/member/${user.userName}/following/users" pjaxTitle="${followingUsersLabel} - ${user.userName} - ${symphonyLabel}"/>
 <#else>
 <p class="ft-center ft-gray home-invisible">${setinvisibleLabel}</p>
 </#if>

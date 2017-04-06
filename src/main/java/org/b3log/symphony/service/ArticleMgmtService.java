@@ -28,15 +28,19 @@ import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.User;
 import org.b3log.latke.repository.*;
 import org.b3log.latke.repository.annotation.Transactional;
+import org.b3log.latke.repository.jdbc.JdbcRepository;
 import org.b3log.latke.service.LangPropsService;
 import org.b3log.latke.service.ServiceException;
 import org.b3log.latke.service.annotation.Service;
+import org.b3log.latke.thread.ThreadService;
+import org.b3log.latke.thread.ThreadServiceFactory;
 import org.b3log.latke.util.Ids;
 import org.b3log.symphony.event.EventTypes;
 import org.b3log.symphony.model.*;
 import org.b3log.symphony.repository.*;
 import org.b3log.symphony.util.Emotions;
 import org.b3log.symphony.util.Pangu;
+import org.b3log.symphony.util.Runes;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -53,7 +57,7 @@ import java.util.*;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
- * @version 2.14.28.35, Jan 18, 2017
+ * @version 2.16.32.40, Mar 26, 2017
  * @since 0.2.0
  */
 @Service
@@ -169,6 +173,12 @@ public class ArticleMgmtService {
     private SearchMgmtService searchMgmtService;
 
     /**
+     * Audio management service.
+     */
+    @Inject
+    private AudioMgmtService audioMgmtService;
+
+    /**
      * Determines whether the specified tag title exists in the specified tags.
      *
      * @param tagTitle the specified tag title
@@ -184,6 +194,58 @@ public class ArticleMgmtService {
         }
 
         return false;
+    }
+
+    /**
+     * Generates article's audio.
+     *
+     * @param article the specified article
+     * @param userId  the specified user id
+     */
+    public void genArticleAudio(final JSONObject article, final String userId) {
+        if (Article.ARTICLE_TYPE_C_THOUGHT == article.optInt(Article.ARTICLE_TYPE)) {
+            return;
+        }
+
+        final String articleId = article.optString(Keys.OBJECT_ID);
+        String previewContent = article.optString(Article.ARTICLE_CONTENT);
+        previewContent = Emotions.clear(Jsoup.parse(previewContent).text());
+        previewContent = StringUtils.substring(previewContent, 0, 512);
+        final String contentToTTS = previewContent;
+
+        final ThreadService threadService = ThreadServiceFactory.getThreadService();
+        threadService.submit(() -> {
+            final Transaction transaction = articleRepository.beginTransaction();
+
+            String audioURL = "";
+            if (StringUtils.length(contentToTTS) < 96 || Runes.getChinesePercent(contentToTTS) < 40) {
+                LOGGER.debug("Content is too short to TTS [contentToTTS=" + contentToTTS + "]");
+            } else {
+                audioURL = audioMgmtService.tts(contentToTTS, Article.ARTICLE, articleId, userId);
+            }
+
+            article.put(Article.ARTICLE_AUDIO_URL, audioURL);
+
+            try {
+                final JSONObject toUpdate = articleRepository.get(articleId);
+                toUpdate.put(Article.ARTICLE_AUDIO_URL, audioURL);
+
+                articleRepository.update(articleId, toUpdate);
+                transaction.commit();
+
+                if (StringUtils.isNotBlank(audioURL)) {
+                    LOGGER.debug("Generated article [id=" + articleId + "] audio");
+                }
+            } catch (final Exception e) {
+                if (transaction.isActive()) {
+                    transaction.rollback();
+                }
+
+                LOGGER.log(Level.ERROR, "Updates article's audio URL failed", e);
+            }
+
+            JdbcRepository.dispose();
+        }, 1000 * 30);
     }
 
     /**
@@ -314,7 +376,6 @@ public class ArticleMgmtService {
      *                          "articleTags": "",
      *                          "articleContent": "",
      *                          "articleEditorType": "",
-     *                          "articleAuthorEmail": "",
      *                          "articleAuthorId": "",
      *                          "articleCommentable": boolean, // optional, default to true
      *                          "syncWithSymphonyClient": boolean, // optional
@@ -400,12 +461,19 @@ public class ArticleMgmtService {
                 final JSONObject maybeExist = articleRepository.getByTitle(articleTitle);
                 if (null != maybeExist) {
                     final String existArticleAuthorId = maybeExist.optString(Article.ARTICLE_AUTHOR_ID);
-                    final JSONObject existArticleAuthor = userRepository.get(existArticleAuthorId);
-                    final String userName = existArticleAuthor.optString(User.USER_NAME);
-                    String msg = langPropsService.get("duplicatedArticleTitleLabel");
-                    msg = msg.replace("{user}", "<a target='_blank' href='/member/" + userName + "'>" + userName + "</a>");
-                    msg = msg.replace("{article}", "<a target='_blank' href='/article/" + maybeExist.optString(Keys.OBJECT_ID)
-                            + "'>" + articleTitle + "</a>");
+                    String msg;
+                    if (existArticleAuthorId.equals(authorId)) {
+                        msg = langPropsService.get("duplicatedArticleTitleSelfLabel");
+                        msg = msg.replace("{article}", "<a target='_blank' href='/article/" + maybeExist.optString(Keys.OBJECT_ID)
+                                + "'>" + articleTitle + "</a>");
+                    } else {
+                        final JSONObject existArticleAuthor = userRepository.get(existArticleAuthorId);
+                        final String userName = existArticleAuthor.optString(User.USER_NAME);
+                        msg = langPropsService.get("duplicatedArticleTitleLabel");
+                        msg = msg.replace("{user}", "<a target='_blank' href='/member/" + userName + "'>" + userName + "</a>");
+                        msg = msg.replace("{article}", "<a target='_blank' href='/article/" + maybeExist.optString(Keys.OBJECT_ID)
+                                + "'>" + articleTitle + "</a>");
+                    }
 
                     throw new ServiceException(msg);
                 }
@@ -430,7 +498,7 @@ public class ArticleMgmtService {
 
             String articleContent = requestJSONObject.optString(Article.ARTICLE_CONTENT);
             articleContent = Emotions.toAliases(articleContent);
-            articleContent = StringUtils.trim(articleContent) + " ";
+            //articleContent = StringUtils.trim(articleContent) + " "; https://github.com/b3log/symphony/issues/389
             articleContent = StringUtils.replace(articleContent, langPropsService.get("uploadingLabel", Locale.SIMPLIFIED_CHINESE), "");
             articleContent = StringUtils.replace(articleContent, langPropsService.get("uploadingLabel", Locale.US), "");
             article.put(Article.ARTICLE_CONTENT, articleContent);
@@ -438,7 +506,6 @@ public class ArticleMgmtService {
             article.put(Article.ARTICLE_REWARD_CONTENT, requestJSONObject.optString(Article.ARTICLE_REWARD_CONTENT));
 
             article.put(Article.ARTICLE_EDITOR_TYPE, requestJSONObject.optString(Article.ARTICLE_EDITOR_TYPE));
-            article.put(Article.ARTICLE_AUTHOR_EMAIL, requestJSONObject.optString(Article.ARTICLE_AUTHOR_EMAIL));
             article.put(Article.ARTICLE_SYNC_TO_CLIENT, fromClient ? true : author.optBoolean(UserExt.SYNC_TO_CLIENT));
             article.put(Article.ARTICLE_AUTHOR_ID, authorId);
             article.put(Article.ARTICLE_COMMENT_CNT, 0);
@@ -474,6 +541,7 @@ public class ArticleMgmtService {
             article.put(Article.ARTICLE_PERFECT, Article.ARTICLE_PERFECT_C_NOT_PERFECT);
             article.put(Article.ARTICLE_ANONYMOUS_VIEW,
                     requestJSONObject.optInt(Article.ARTICLE_ANONYMOUS_VIEW, Article.ARTICLE_ANONYMOUS_VIEW_C_USE_GLOBAL));
+            article.put(Article.ARTICLE_AUDIO_URL, "");
 
             String articleTags = article.optString(Article.ARTICLE_TAGS);
             articleTags = Tag.formatTags(articleTags);
@@ -682,15 +750,21 @@ public class ArticleMgmtService {
 
             final JSONObject maybeExist = articleRepository.getByTitle(articleTitle);
             if (null != maybeExist) {
-                final String existArticleAuthorId = maybeExist.optString(Article.ARTICLE_AUTHOR_ID);
-
-                if (!existArticleAuthorId.equals(requestJSONObject.optString(Article.ARTICLE_AUTHOR_ID))) {
-                    final JSONObject existArticleAuthor = userRepository.get(existArticleAuthorId);
-                    final String userName = existArticleAuthor.optString(User.USER_NAME);
-                    String msg = langPropsService.get("duplicatedArticleTitleLabel");
-                    msg = msg.replace("{user}", "<a target='_blank' href='/member/" + userName + "'>" + userName + "</a>");
-                    msg = msg.replace("{article}", "<a target='_blank' href='/article/" + maybeExist.optString(Keys.OBJECT_ID)
-                            + "'>" + articleTitle + "</a>");
+                if (!oldArticle.optString(Article.ARTICLE_TITLE).equals(articleTitle)) {
+                    final String existArticleAuthorId = maybeExist.optString(Article.ARTICLE_AUTHOR_ID);
+                    String msg;
+                    if (existArticleAuthorId.equals(authorId)) {
+                        msg = langPropsService.get("duplicatedArticleTitleSelfLabel");
+                        msg = msg.replace("{article}", "<a target='_blank' href='/article/" + maybeExist.optString(Keys.OBJECT_ID)
+                                + "'>" + articleTitle + "</a>");
+                    } else {
+                        final JSONObject existArticleAuthor = userRepository.get(existArticleAuthorId);
+                        final String userName = existArticleAuthor.optString(User.USER_NAME);
+                        msg = langPropsService.get("duplicatedArticleTitleLabel");
+                        msg = msg.replace("{user}", "<a target='_blank' href='/member/" + userName + "'>" + userName + "</a>");
+                        msg = msg.replace("{article}", "<a target='_blank' href='/article/" + maybeExist.optString(Keys.OBJECT_ID)
+                                + "'>" + articleTitle + "</a>");
+                    }
 
                     throw new ServiceException(msg);
                 }
@@ -719,7 +793,7 @@ public class ArticleMgmtService {
 
             String articleContent = requestJSONObject.optString(Article.ARTICLE_CONTENT);
             articleContent = Emotions.toAliases(articleContent);
-            articleContent = StringUtils.trim(articleContent) + " ";
+            //articleContent = StringUtils.trim(articleContent) + " "; https://github.com/b3log/symphony/issues/389
             articleContent = articleContent.replace(langPropsService.get("uploadingLabel", Locale.SIMPLIFIED_CHINESE), "");
             articleContent = articleContent.replace(langPropsService.get("uploadingLabel", Locale.US), "");
             oldArticle.put(Article.ARTICLE_CONTENT, articleContent);
@@ -861,10 +935,33 @@ public class ArticleMgmtService {
                 }
             }
 
-            userRepository.update(author.optString(Keys.OBJECT_ID), author);
+            userRepository.update(authorId, author);
             articleRepository.update(articleId, article);
 
             transaction.commit();
+
+            if (Article.ARTICLE_PERFECT_C_NOT_PERFECT == oldArticle.optInt(Article.ARTICLE_PERFECT)
+                    && Article.ARTICLE_PERFECT_C_PERFECT == perfect) {
+                final JSONObject notification = new JSONObject();
+                notification.put(Notification.NOTIFICATION_USER_ID, authorId);
+                notification.put(Notification.NOTIFICATION_DATA_ID, articleId);
+
+                notificationMgmtService.addPerfectArticleNotification(notification);
+
+                pointtransferMgmtService.transfer(Pointtransfer.ID_C_SYS, authorId,
+                        Pointtransfer.TRANSFER_TYPE_C_PERFECT_ARTICLE, Pointtransfer.TRANSFER_SUM_C_PERFECT_ARTICLE,
+                        articleId, System.currentTimeMillis());
+            }
+
+            if (Article.ARTICLE_STATUS_C_VALID != article.optInt(Article.ARTICLE_STATUS)) {
+                if (Symphonys.getBoolean("algolia.enabled")) {
+                    searchMgmtService.removeAlgoliaDocument(article);
+                }
+
+                if (Symphonys.getBoolean("es.enabled")) {
+                    searchMgmtService.removeESDocument(article, Article.ARTICLE);
+                }
+            }
         } catch (final Exception e) {
             if (transaction.isActive()) {
                 transaction.rollback();
@@ -1521,7 +1618,6 @@ public class ArticleMgmtService {
             article.put(Article.ARTICLE_CLIENT_ARTICLE_ID, ret);
             article.put(Article.ARTICLE_CLIENT_ARTICLE_PERMALINK, "");
             article.put(Article.ARTICLE_AUTHOR_ID, author.optString(Keys.OBJECT_ID));
-            article.put(Article.ARTICLE_AUTHOR_EMAIL, author.optString(User.USER_EMAIL));
             article.put(Article.ARTICLE_TITLE, Emotions.toAliases(requestJSONObject.optString(Article.ARTICLE_TITLE)));
             article.put(Article.ARTICLE_CONTENT, Emotions.toAliases(requestJSONObject.optString(Article.ARTICLE_CONTENT)));
             article.put(Article.ARTICLE_REWARD_CONTENT, requestJSONObject.optString(Article.ARTICLE_REWARD_CONTENT));
@@ -1589,6 +1685,7 @@ public class ArticleMgmtService {
             article.put(Article.ARTICLE_ANONYMOUS, Article.ARTICLE_ANONYMOUS_C_PUBLIC);
             article.put(Article.ARTICLE_PERFECT, Article.ARTICLE_PERFECT_C_NOT_PERFECT);
             article.put(Article.ARTICLE_ANONYMOUS_VIEW, Article.ARTICLE_ANONYMOUS_VIEW_C_USE_GLOBAL);
+            article.put(Article.ARTICLE_AUDIO_URL, "");
 
             final JSONObject articleCntOption = optionRepository.get(Option.ID_C_STATISTIC_ARTICLE_COUNT);
             final int articleCnt = articleCntOption.optInt(Option.OPTION_VALUE);

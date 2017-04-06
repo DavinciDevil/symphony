@@ -55,7 +55,7 @@
                         <div class="fn-clear article-reward-content">
                             <textarea id="articleRewardContent" tabindex="4"
                                       placeholder="${rewardEditorPlaceholderLabel}"><#if article??>${article.articleRewardContent}</#if></textarea>
-                        </div>
+                        </div><br>
                         <div>
                             <input id="articleRewardPoint" type="number" tabindex="5" min="1" 
                                    <#if article?? && 0 < article.articleRewardPoint>data-orval="${article.articleRewardPoint}"</#if> 
@@ -100,11 +100,11 @@
                         </#if>
 
                         <#if article??>
-                            <#if permissions["commonAddArticle"].permissionGrant>
+                            <#if permissions["commonUpdateArticle"].permissionGrant>
                                 <button class="red fn-right" tabindex="10" onclick="AddArticle.add('${csrfToken}')">${submitLabel}</button>
                             </#if>
                         <#else>
-                            <#if permissions["commonUpdateArticle"].permissionGrant>
+                            <#if permissions["commonAddArticle"].permissionGrant>
                                 <button class="red fn-right" tabindex="10" onclick="AddArticle.add('${csrfToken}')">${postLabel}</button>
                             </#if>
                         </#if>
@@ -141,7 +141,7 @@
             Label.articleTitleErrorLabel = "${articleTitleErrorLabel}";
             Label.articleContentErrorLabel = "${articleContentErrorLabel}";
             Label.tagsErrorLabel = "${tagsErrorLabel}";
-            Label.userName = "${userName}";
+            Label.userName = "${currentUser.userName}";
             Label.recordDeniedLabel = "${recordDeniedLabel}";
             Label.recordDeviceNotFoundLabel = "${recordDeviceNotFoundLabel}";
             Label.uploadLabel = "${uploadLabel}";

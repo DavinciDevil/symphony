@@ -30,6 +30,7 @@ import org.b3log.latke.util.Stopwatchs;
 import org.b3log.symphony.model.*;
 import org.b3log.symphony.repository.*;
 import org.b3log.symphony.util.Emotions;
+import org.b3log.symphony.util.Symphonys;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -42,7 +43,7 @@ import java.util.List;
  * Notification query service.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.10.3.9, Jan 19, 2017
+ * @version 1.13.3.12, Mar 22, 2017
  * @since 0.2.5
  */
 @Service
@@ -344,7 +345,7 @@ public class NotificationQueryService {
 
             return result.optJSONObject(Pagination.PAGINATION).optInt(Pagination.PAGINATION_RECORD_COUNT);
         } catch (final RepositoryException e) {
-            LOGGER.log(Level.ERROR, "Gets [commented] notification count failed [userId=" + userId + "]", e);
+            LOGGER.log(Level.ERROR, "Gets [" + notificationDataType + "] notification count failed [userId=" + userId + "]", e);
 
             return 0;
         }
@@ -380,6 +381,8 @@ public class NotificationQueryService {
                 Notification.DATA_TYPE_C_INVITECODE_USED));
         subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
                 Notification.DATA_TYPE_C_INVITATION_LINK_USED));
+        subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
+                Notification.DATA_TYPE_C_POINT_PERFECT_ARTICLE));
 
         filters.add(new CompositeFilter(CompositeFilterOperator.OR, subFilters));
 
@@ -443,6 +446,8 @@ public class NotificationQueryService {
                 Notification.DATA_TYPE_C_INVITECODE_USED));
         subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
                 Notification.DATA_TYPE_C_INVITATION_LINK_USED));
+        subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
+                Notification.DATA_TYPE_C_POINT_PERFECT_ARTICLE));
 
         filters.add(new CompositeFilter(CompositeFilterOperator.OR, subFilters));
 
@@ -606,6 +611,22 @@ public class NotificationQueryService {
                         desTemplate = desTemplate.replace("{user}", invitedUserLink18);
 
                         break;
+                    case Notification.DATA_TYPE_C_POINT_PERFECT_ARTICLE:
+                        desTemplate = langPropsService.get("notificationPointPerfectArticleLabel");
+
+                        final JSONObject article22 = articleRepository.get(dataId);
+                        if (null == article22) {
+                            desTemplate = langPropsService.get("removedLabel");
+
+                            break;
+                        }
+
+                        final String articleLink22 = "<a href=\""
+                                + article22.optString(Article.ARTICLE_PERMALINK) + "\">"
+                                + article22.optString(Article.ARTICLE_TITLE) + "</a>";
+                        desTemplate = desTemplate.replace("{article}", articleLink22);
+
+                        break;
                     default:
                         throw new AssertionError();
                 }
@@ -665,6 +686,9 @@ public class NotificationQueryService {
                 addSort(Keys.OBJECT_ID, SortDirection.DESCENDING);
 
         try {
+            final JSONObject user = userRepository.get(userId);
+            final int cmtViewMode = user.optInt(UserExt.USER_COMMENT_VIEW_MODE);
+
             final JSONObject queryResult = notificationRepository.get(query);
             final JSONArray results = queryResult.optJSONArray(Keys.RESULTS);
 
@@ -698,10 +722,13 @@ public class NotificationQueryService {
                         optLong(UserExt.USER_UPDATE_TIME));
                 commentedNotification.put(Comment.COMMENT_T_ARTICLE_TITLE, Emotions.convert(articleTitle));
                 commentedNotification.put(Comment.COMMENT_T_ARTICLE_TYPE, articleType);
-                commentedNotification.put(Comment.COMMENT_SHARP_URL, comment.optString(Comment.COMMENT_SHARP_URL));
                 commentedNotification.put(Comment.COMMENT_CREATE_TIME, comment.opt(Comment.COMMENT_CREATE_TIME));
                 commentedNotification.put(Notification.NOTIFICATION_HAS_READ, notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
                 commentedNotification.put(Comment.COMMENT_T_ARTICLE_PERFECT, articlePerfect);
+                final String articleId = comment.optString(Comment.COMMENT_ON_ARTICLE_ID);
+                final int cmtPage = commentQueryService.getCommentPage(articleId, commentId, cmtViewMode, Symphonys.getInt("articleCommentsPageSize"));
+                commentedNotification.put(Comment.COMMENT_SHARP_URL, "/article/" + articleId + "?p=" + cmtPage
+                        + "&m=" + cmtViewMode + "#" + commentId);
 
                 rslts.add(commentedNotification);
             }
@@ -824,6 +851,7 @@ public class NotificationQueryService {
      *         "createTime": java.util.Date,
      *         "hasRead": boolean,
      *         "atInArticle": boolean,
+     *         "isAt": boolean,
      *         "articleTags": "", // if atInArticle is true
      *         "articleTagObjs": [{}, ....], // if atInArticle is true
      *         "articleCommentCnt": int // if atInArticle is true
@@ -841,7 +869,24 @@ public class NotificationQueryService {
 
         final List<Filter> filters = new ArrayList<>();
         filters.add(new PropertyFilter(Notification.NOTIFICATION_USER_ID, FilterOperator.EQUAL, userId));
-        filters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL, Notification.DATA_TYPE_C_AT));
+
+        final List<Filter> subFilters = new ArrayList<>();
+        subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
+                Notification.DATA_TYPE_C_AT));
+        subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
+                Notification.DATA_TYPE_C_ARTICLE_NEW_FOLLOWER));
+        subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
+                Notification.DATA_TYPE_C_ARTICLE_NEW_WATCHER));
+        subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
+                Notification.DATA_TYPE_C_COMMENT_VOTE_UP));
+        subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
+                Notification.DATA_TYPE_C_COMMENT_VOTE_DOWN));
+        subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
+                Notification.DATA_TYPE_C_ARTICLE_VOTE_UP));
+        subFilters.add(new PropertyFilter(Notification.NOTIFICATION_DATA_TYPE, FilterOperator.EQUAL,
+                Notification.DATA_TYPE_C_ARTICLE_VOTE_DOWN));
+
+        filters.add(new CompositeFilter(CompositeFilterOperator.OR, subFilters));
 
         final Query query = new Query().setCurrentPageNum(currentPageNum).setPageSize(pageSize).
                 setFilter(new CompositeFilter(CompositeFilterOperator.AND, filters)).
@@ -857,67 +902,196 @@ public class NotificationQueryService {
 
             for (int i = 0; i < results.length(); i++) {
                 final JSONObject notification = results.optJSONObject(i);
-                final String commentId = notification.optString(Notification.NOTIFICATION_DATA_ID);
+                final int dataType = notification.optInt(Notification.NOTIFICATION_DATA_TYPE);
+                final String dataId = notification.optString(Notification.NOTIFICATION_DATA_ID);
 
-                final JSONObject comment = commentQueryService.getCommentById(avatarViewMode, commentId);
-                if (null != comment) {
-                    final Query q = new Query().setPageCount(1).
-                            addProjection(Article.ARTICLE_TITLE, String.class).
-                            addProjection(Article.ARTICLE_TYPE, Integer.class).
-                            setFilter(new PropertyFilter(Keys.OBJECT_ID, FilterOperator.EQUAL,
-                                    comment.optString(Comment.COMMENT_ON_ARTICLE_ID)));
-                    final JSONArray rlts = articleRepository.get(q).optJSONArray(Keys.RESULTS);
-                    final JSONObject article = rlts.optJSONObject(0);
-                    final String articleTitle = article.optString(Article.ARTICLE_TITLE);
-                    final int articleType = article.optInt(Article.ARTICLE_TYPE);
-                    final int articlePerfect = article.optInt(Article.ARTICLE_PERFECT);
+                final JSONObject atNotification = new JSONObject();
+                atNotification.put(Notification.NOTIFICATION_DATA_TYPE, dataType);
+                String description = "";
 
-                    final JSONObject atNotification = new JSONObject();
-                    atNotification.put(Keys.OBJECT_ID, notification.optString(Keys.OBJECT_ID));
-                    atNotification.put(Common.AUTHOR_NAME, comment.optString(Comment.COMMENT_T_AUTHOR_NAME));
-                    atNotification.put(Common.CONTENT, comment.optString(Comment.COMMENT_CONTENT));
-                    atNotification.put(Common.THUMBNAIL_URL,
-                            comment.optString(Comment.COMMENT_T_AUTHOR_THUMBNAIL_URL));
-                    atNotification.put(Common.THUMBNAIL_UPDATE_TIME, comment.optJSONObject(Comment.COMMENT_T_COMMENTER).
-                            optLong(UserExt.USER_UPDATE_TIME));
-                    atNotification.put(Article.ARTICLE_TITLE, Emotions.convert(articleTitle));
-                    atNotification.put(Article.ARTICLE_TYPE, articleType);
-                    atNotification.put(Common.URL, comment.optString(Comment.COMMENT_SHARP_URL));
-                    atNotification.put(Common.CREATE_TIME, comment.opt(Comment.COMMENT_CREATE_TIME));
-                    atNotification.put(Notification.NOTIFICATION_HAS_READ, notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
-                    atNotification.put(Notification.NOTIFICATION_T_AT_IN_ARTICLE, false);
-                    atNotification.put(Article.ARTICLE_PERFECT, articlePerfect);
+                switch (dataType) {
+                    case Notification.DATA_TYPE_C_AT:
+                        final JSONObject comment = commentQueryService.getCommentById(avatarViewMode, dataId);
+                        if (null != comment) {
+                            final Query q = new Query().setPageCount(1).
+                                    addProjection(Article.ARTICLE_TITLE, String.class).
+                                    addProjection(Article.ARTICLE_TYPE, Integer.class).
+                                    setFilter(new PropertyFilter(Keys.OBJECT_ID, FilterOperator.EQUAL,
+                                            comment.optString(Comment.COMMENT_ON_ARTICLE_ID)));
+                            final JSONArray rlts = articleRepository.get(q).optJSONArray(Keys.RESULTS);
+                            final JSONObject article = rlts.optJSONObject(0);
+                            final String articleTitle = article.optString(Article.ARTICLE_TITLE);
+                            final int articleType = article.optInt(Article.ARTICLE_TYPE);
+                            final int articlePerfect = article.optInt(Article.ARTICLE_PERFECT);
 
-                    rslts.add(atNotification);
-                } else { // The 'at' in article content
-                    final JSONObject article = articleRepository.get(commentId);
+                            atNotification.put(Keys.OBJECT_ID, notification.optString(Keys.OBJECT_ID));
+                            atNotification.put(Common.AUTHOR_NAME, comment.optString(Comment.COMMENT_T_AUTHOR_NAME));
+                            atNotification.put(Common.CONTENT, comment.optString(Comment.COMMENT_CONTENT));
+                            atNotification.put(Common.THUMBNAIL_URL,
+                                    comment.optString(Comment.COMMENT_T_AUTHOR_THUMBNAIL_URL));
+                            atNotification.put(Common.THUMBNAIL_UPDATE_TIME, comment.optJSONObject(Comment.COMMENT_T_COMMENTER).
+                                    optLong(UserExt.USER_UPDATE_TIME));
+                            atNotification.put(Article.ARTICLE_TITLE, Emotions.convert(articleTitle));
+                            atNotification.put(Article.ARTICLE_TYPE, articleType);
+                            atNotification.put(Common.URL, comment.optString(Comment.COMMENT_SHARP_URL));
+                            atNotification.put(Common.CREATE_TIME, comment.opt(Comment.COMMENT_CREATE_TIME));
+                            atNotification.put(Notification.NOTIFICATION_HAS_READ, notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
+                            atNotification.put(Notification.NOTIFICATION_T_AT_IN_ARTICLE, false);
+                            atNotification.put(Article.ARTICLE_PERFECT, articlePerfect);
 
-                    final String articleAuthorId = article.optString(Article.ARTICLE_AUTHOR_ID);
-                    final JSONObject articleAuthor = userRepository.get(articleAuthorId);
+                            rslts.add(atNotification);
+                        } else { // The 'at' in article content
+                            final JSONObject article = articleRepository.get(dataId);
 
-                    final JSONObject atNotification = new JSONObject();
-                    atNotification.put(Keys.OBJECT_ID, notification.optString(Keys.OBJECT_ID));
-                    atNotification.put(Common.AUTHOR_NAME, articleAuthor.optString(User.USER_NAME));
-                    atNotification.put(Common.CONTENT, "");
-                    final String thumbnailURL = avatarQueryService.getAvatarURLByUser(avatarViewMode, articleAuthor, "48");
-                    atNotification.put(Common.THUMBNAIL_URL, thumbnailURL);
-                    atNotification.put(Common.THUMBNAIL_UPDATE_TIME, articleAuthor.optLong(UserExt.USER_UPDATE_TIME));
-                    atNotification.put(Article.ARTICLE_TITLE, Emotions.convert(article.optString(Article.ARTICLE_TITLE)));
-                    atNotification.put(Article.ARTICLE_TYPE, article.optInt(Article.ARTICLE_TYPE));
-                    atNotification.put(Common.URL, article.optString(Article.ARTICLE_PERMALINK));
-                    atNotification.put(Common.CREATE_TIME, new Date(article.optLong(Article.ARTICLE_CREATE_TIME)));
-                    atNotification.put(Notification.NOTIFICATION_HAS_READ, notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
-                    atNotification.put(Notification.NOTIFICATION_T_AT_IN_ARTICLE, true);
+                            final String articleAuthorId = article.optString(Article.ARTICLE_AUTHOR_ID);
+                            final JSONObject articleAuthor = userRepository.get(articleAuthorId);
 
-                    final String tagsStr = article.optString(Article.ARTICLE_TAGS);
-                    atNotification.put(Article.ARTICLE_TAGS, tagsStr);
-                    final List<JSONObject> tags = buildTagObjs(tagsStr);
-                    atNotification.put(Article.ARTICLE_T_TAG_OBJS, (Object) tags);
+                            atNotification.put(Keys.OBJECT_ID, notification.optString(Keys.OBJECT_ID));
+                            atNotification.put(Common.AUTHOR_NAME, articleAuthor.optString(User.USER_NAME));
+                            atNotification.put(Common.CONTENT, "");
+                            final String thumbnailURL = avatarQueryService.getAvatarURLByUser(avatarViewMode, articleAuthor, "48");
+                            atNotification.put(Common.THUMBNAIL_URL, thumbnailURL);
+                            atNotification.put(Common.THUMBNAIL_UPDATE_TIME, articleAuthor.optLong(UserExt.USER_UPDATE_TIME));
+                            atNotification.put(Article.ARTICLE_TITLE, Emotions.convert(article.optString(Article.ARTICLE_TITLE)));
+                            atNotification.put(Article.ARTICLE_TYPE, article.optInt(Article.ARTICLE_TYPE));
+                            atNotification.put(Common.URL, article.optString(Article.ARTICLE_PERMALINK));
+                            atNotification.put(Common.CREATE_TIME, new Date(article.optLong(Article.ARTICLE_CREATE_TIME)));
+                            atNotification.put(Notification.NOTIFICATION_HAS_READ, notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
+                            atNotification.put(Notification.NOTIFICATION_T_AT_IN_ARTICLE, true);
 
-                    atNotification.put(Article.ARTICLE_COMMENT_CNT, article.optInt(Article.ARTICLE_COMMENT_CNT));
-                    atNotification.put(Article.ARTICLE_PERFECT, article.optInt(Article.ARTICLE_PERFECT));
+                            final String tagsStr = article.optString(Article.ARTICLE_TAGS);
+                            atNotification.put(Article.ARTICLE_TAGS, tagsStr);
+                            final List<JSONObject> tags = buildTagObjs(tagsStr);
+                            atNotification.put(Article.ARTICLE_T_TAG_OBJS, (Object) tags);
 
-                    rslts.add(atNotification);
+                            atNotification.put(Article.ARTICLE_COMMENT_CNT, article.optInt(Article.ARTICLE_COMMENT_CNT));
+                            atNotification.put(Article.ARTICLE_PERFECT, article.optInt(Article.ARTICLE_PERFECT));
+
+                            rslts.add(atNotification);
+                        }
+
+                        break;
+                    case Notification.DATA_TYPE_C_ARTICLE_NEW_FOLLOWER:
+                    case Notification.DATA_TYPE_C_ARTICLE_NEW_WATCHER:
+                        final String articleId = dataId.split("-")[0];
+                        final String followerUserId = dataId.split("-")[1];
+
+                        atNotification.put(Keys.OBJECT_ID, notification.optString(Keys.OBJECT_ID));
+                        atNotification.put(Notification.NOTIFICATION_HAS_READ, notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
+                        atNotification.put(Common.CREATE_TIME, new Date(notification.optLong(Keys.OBJECT_ID)));
+
+                        final JSONObject article = articleRepository.get(articleId);
+                        if (null == article) {
+                            description = langPropsService.get("removedLabel");
+                            atNotification.put(Common.DESCRIPTION, description);
+
+                            rslts.add(atNotification);
+
+                            continue;
+                        }
+
+                        if (Notification.DATA_TYPE_C_ARTICLE_NEW_FOLLOWER == dataType) {
+                            description = langPropsService.get("notificationArticleNewFollowerLabel");
+                        } else if (Notification.DATA_TYPE_C_ARTICLE_NEW_WATCHER == dataType) {
+                            description = langPropsService.get("notificationArticleNewWatcherLabel");
+                        }
+
+                        final JSONObject followerUser = userRepository.get(followerUserId);
+                        final String followerUserName = followerUser.optString(User.USER_NAME);
+                        atNotification.put(User.USER_NAME, followerUserName);
+
+                        final String thumbnailURL = avatarQueryService.getAvatarURLByUser(avatarViewMode, followerUser, "48");
+                        atNotification.put(Common.THUMBNAIL_URL, thumbnailURL);
+                        atNotification.put(Common.THUMBNAIL_UPDATE_TIME, followerUser.optLong(UserExt.USER_UPDATE_TIME));
+
+                        final String userLink = "<a href=\"/member/" + followerUserName + "\">" + followerUserName + "</a> ";
+                        description = description.replace("{user}", userLink);
+
+                        final String articleLink = " <a href=\"" + article.optString(Article.ARTICLE_PERMALINK) + "\">"
+                                + Emotions.convert(article.optString(Article.ARTICLE_TITLE)) + "</a>";
+                        description = description.replace("{article}", articleLink);
+
+                        atNotification.put(Common.DESCRIPTION, description);
+
+                        rslts.add(atNotification);
+
+                        break;
+                    case Notification.DATA_TYPE_C_COMMENT_VOTE_UP:
+                    case Notification.DATA_TYPE_C_COMMENT_VOTE_DOWN:
+                    case Notification.DATA_TYPE_C_ARTICLE_VOTE_UP:
+                    case Notification.DATA_TYPE_C_ARTICLE_VOTE_DOWN:
+                        final String commentOrArticleId = dataId.split("-")[0];
+                        final String voterId = dataId.split("-")[1];
+
+                        JSONObject articleVote = null;
+
+                        if (Notification.DATA_TYPE_C_COMMENT_VOTE_UP == dataType) {
+                            description = langPropsService.get("notificationCommentVoteUpLabel");
+                            articleVote = commentRepository.get(commentOrArticleId);
+                            if (null == articleVote) {
+                                description = langPropsService.get("removedLabel");
+                                atNotification.put(Common.DESCRIPTION, description);
+
+                                rslts.add(atNotification);
+
+                                continue;
+                            }
+
+                            articleVote = articleRepository.get(articleVote.optString(Comment.COMMENT_ON_ARTICLE_ID));
+                        } else if (Notification.DATA_TYPE_C_COMMENT_VOTE_DOWN == dataType) {
+                            description = langPropsService.get("notificationCommentVoteDownLabel");
+                            articleVote = commentRepository.get(commentOrArticleId);
+                            if (null == articleVote) {
+                                description = langPropsService.get("removedLabel");
+                                atNotification.put(Common.DESCRIPTION, description);
+
+                                rslts.add(atNotification);
+
+                                continue;
+                            }
+
+                            articleVote = articleRepository.get(articleVote.optString(Comment.COMMENT_ON_ARTICLE_ID));
+                        } else if (Notification.DATA_TYPE_C_ARTICLE_VOTE_UP == dataType) {
+                            description = langPropsService.get("notificationArticleVoteUpLabel");
+                            articleVote = articleRepository.get(commentOrArticleId);
+                        } else if (Notification.DATA_TYPE_C_ARTICLE_VOTE_DOWN == dataType) {
+                            description = langPropsService.get("notificationArticleVoteDownLabel");
+                            articleVote = articleRepository.get(commentOrArticleId);
+                        }
+
+                        if (null == articleVote) {
+                            description = langPropsService.get("removedLabel");
+                            atNotification.put(Common.DESCRIPTION, description);
+
+                            rslts.add(atNotification);
+
+                            continue;
+                        }
+
+                        atNotification.put(Keys.OBJECT_ID, notification.optString(Keys.OBJECT_ID));
+                        atNotification.put(Notification.NOTIFICATION_HAS_READ, notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
+                        atNotification.put(Common.CREATE_TIME, new Date(notification.optLong(Keys.OBJECT_ID)));
+
+                        final JSONObject voter = userRepository.get(voterId);
+                        final String voterUserName = voter.optString(User.USER_NAME);
+                        atNotification.put(User.USER_NAME, voterUserName);
+
+                        final String thumbnailURLVote = avatarQueryService.getAvatarURLByUser(avatarViewMode, voter, "48");
+                        atNotification.put(Common.THUMBNAIL_URL, thumbnailURLVote);
+                        atNotification.put(Common.THUMBNAIL_UPDATE_TIME, voter.optLong(UserExt.USER_UPDATE_TIME));
+
+                        final String userLinkVote = "<a href=\"/member/" + voterUserName + "\">" + voterUserName + "</a> ";
+                        description = description.replace("{user}", userLinkVote);
+
+                        final String articleLinkVote = " <a href=\"" + articleVote.optString(Article.ARTICLE_PERMALINK) + "\">"
+                                + Emotions.convert(articleVote.optString(Article.ARTICLE_TITLE)) + "</a>";
+                        description = description.replace("{article}", articleLinkVote);
+
+                        atNotification.put(Common.DESCRIPTION, description);
+
+                        rslts.add(atNotification);
+
+                        break;
                 }
             }
 
@@ -946,13 +1120,13 @@ public class NotificationQueryService {
      *         "thumbnailURL": "",
      *         "articleTitle": "",
      *         "articleType": int,
-     *         "articleTags": "",
-     *         "articleTagObjs": [{}, ....],
-     *         "articleCommentCnt": int,
      *         "url": "",
      *         "createTime": java.util.Date,
      *         "hasRead": boolean,
      *         "type": "", // article/comment
+     *         "articleTags": "", // if atInArticle is true
+     *         "articleTagObjs": [{}, ....], // if atInArticle is true
+     *         "articleCommentCnt": int // if atInArticle is true
      *     }, ....]
      * }
      * </pre>
@@ -992,66 +1166,73 @@ public class NotificationQueryService {
 
             for (int i = 0; i < results.length(); i++) {
                 final JSONObject notification = results.optJSONObject(i);
-                final String articleId = notification.optString(Notification.NOTIFICATION_DATA_ID);
+                final String commentId = notification.optString(Notification.NOTIFICATION_DATA_ID);
 
-                final Query q = new Query().setPageCount(1).
-                        addProjection(Article.ARTICLE_TITLE, String.class).
-                        addProjection(Article.ARTICLE_TYPE, Integer.class).
-                        addProjection(Article.ARTICLE_AUTHOR_ID, String.class).
-                        addProjection(Article.ARTICLE_PERMALINK, String.class).
-                        addProjection(Article.ARTICLE_CREATE_TIME, Long.class).
-                        addProjection(Article.ARTICLE_TAGS, String.class).
-                        addProjection(Article.ARTICLE_COMMENT_CNT, Integer.class).
-                        addProjection(Article.ARTICLE_PERFECT, Integer.class).
-                        setFilter(new PropertyFilter(Keys.OBJECT_ID, FilterOperator.EQUAL, articleId));
-                final JSONArray rlts = articleRepository.get(q).optJSONArray(Keys.RESULTS);
-                final JSONObject article = rlts.optJSONObject(0);
+                final JSONObject comment = commentQueryService.getCommentById(avatarViewMode, commentId);
+                if (null != comment) {
+                    final Query q = new Query().setPageCount(1).
+                            addProjection(Article.ARTICLE_TITLE, String.class).
+                            addProjection(Article.ARTICLE_TYPE, Integer.class).
+                            setFilter(new PropertyFilter(Keys.OBJECT_ID, FilterOperator.EQUAL,
+                                    comment.optString(Comment.COMMENT_ON_ARTICLE_ID)));
+                    final JSONArray rlts = articleRepository.get(q).optJSONArray(Keys.RESULTS);
+                    final JSONObject article = rlts.optJSONObject(0);
+                    final String articleTitle = article.optString(Article.ARTICLE_TITLE);
+                    final int articleType = article.optInt(Article.ARTICLE_TYPE);
+                    final int articlePerfect = article.optInt(Article.ARTICLE_PERFECT);
 
-                if (null == article) {
-                    LOGGER.warn("Not found article[id=" + articleId + ']');
+                    final JSONObject followingNotification = new JSONObject();
+                    followingNotification.put(Keys.OBJECT_ID, notification.optString(Keys.OBJECT_ID));
+                    followingNotification.put(Common.AUTHOR_NAME, comment.optString(Comment.COMMENT_T_AUTHOR_NAME));
+                    followingNotification.put(Common.CONTENT, comment.optString(Comment.COMMENT_CONTENT));
+                    followingNotification.put(Common.THUMBNAIL_URL,
+                            comment.optString(Comment.COMMENT_T_AUTHOR_THUMBNAIL_URL));
+                    followingNotification.put(Common.THUMBNAIL_UPDATE_TIME, comment.optJSONObject(Comment.COMMENT_T_COMMENTER).
+                            optLong(UserExt.USER_UPDATE_TIME));
+                    followingNotification.put(Article.ARTICLE_TITLE, Emotions.convert(articleTitle));
+                    followingNotification.put(Article.ARTICLE_TYPE, articleType);
+                    followingNotification.put(Common.URL, comment.optString(Comment.COMMENT_SHARP_URL));
+                    followingNotification.put(Common.CREATE_TIME, comment.opt(Comment.COMMENT_CREATE_TIME));
+                    followingNotification.put(Notification.NOTIFICATION_HAS_READ, notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
+                    followingNotification.put(Notification.NOTIFICATION_T_IS_COMMENT, true);
+                    followingNotification.put(Article.ARTICLE_PERFECT, articlePerfect);
 
-                    continue;
+                    rslts.add(followingNotification);
+                } else { // The 'at' in article content
+                    final JSONObject article = articleRepository.get(commentId);
+
+                    final String articleAuthorId = article.optString(Article.ARTICLE_AUTHOR_ID);
+                    final JSONObject articleAuthor = userRepository.get(articleAuthorId);
+
+                    final JSONObject followingNotification = new JSONObject();
+                    followingNotification.put(Keys.OBJECT_ID, notification.optString(Keys.OBJECT_ID));
+                    followingNotification.put(Common.AUTHOR_NAME, articleAuthor.optString(User.USER_NAME));
+                    followingNotification.put(Common.CONTENT, "");
+                    final String thumbnailURL = avatarQueryService.getAvatarURLByUser(avatarViewMode, articleAuthor, "48");
+                    followingNotification.put(Common.THUMBNAIL_URL, thumbnailURL);
+                    followingNotification.put(Common.THUMBNAIL_UPDATE_TIME, articleAuthor.optLong(UserExt.USER_UPDATE_TIME));
+                    followingNotification.put(Article.ARTICLE_TITLE, Emotions.convert(article.optString(Article.ARTICLE_TITLE)));
+                    followingNotification.put(Article.ARTICLE_TYPE, article.optInt(Article.ARTICLE_TYPE));
+                    followingNotification.put(Common.URL, article.optString(Article.ARTICLE_PERMALINK));
+                    followingNotification.put(Common.CREATE_TIME, new Date(article.optLong(Article.ARTICLE_CREATE_TIME)));
+                    followingNotification.put(Notification.NOTIFICATION_HAS_READ, notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
+                    followingNotification.put(Notification.NOTIFICATION_T_IS_COMMENT, false);
+
+                    final String tagsStr = article.optString(Article.ARTICLE_TAGS);
+                    followingNotification.put(Article.ARTICLE_TAGS, tagsStr);
+                    final List<JSONObject> tags = buildTagObjs(tagsStr);
+                    followingNotification.put(Article.ARTICLE_T_TAG_OBJS, (Object) tags);
+
+                    followingNotification.put(Article.ARTICLE_COMMENT_CNT, article.optInt(Article.ARTICLE_COMMENT_CNT));
+                    followingNotification.put(Article.ARTICLE_PERFECT, article.optInt(Article.ARTICLE_PERFECT));
+
+                    rslts.add(followingNotification);
                 }
-
-                final String articleTitle = article.optString(Article.ARTICLE_TITLE);
-                final String articleAuthorId = article.optString(Article.ARTICLE_AUTHOR_ID);
-                final JSONObject author = userRepository.get(articleAuthorId);
-
-                if (null == author) {
-                    LOGGER.warn("Not found user[id=" + articleAuthorId + ']');
-
-                    continue;
-                }
-
-                final JSONObject followingUserNotification = new JSONObject();
-                followingUserNotification.put(Keys.OBJECT_ID, notification.optString(Keys.OBJECT_ID));
-                followingUserNotification.put(Common.AUTHOR_NAME, author.optString(User.USER_NAME));
-                followingUserNotification.put(Common.CONTENT, "");
-                followingUserNotification.put(Common.THUMBNAIL_URL,
-                        avatarQueryService.getAvatarURLByUser(avatarViewMode, author, "48"));
-                followingUserNotification.put(Common.THUMBNAIL_UPDATE_TIME, author.optLong(UserExt.USER_UPDATE_TIME));
-                followingUserNotification.put(Article.ARTICLE_TITLE, Emotions.convert(articleTitle));
-                followingUserNotification.put(Common.URL, article.optString(Article.ARTICLE_PERMALINK));
-                followingUserNotification.put(Common.CREATE_TIME, new Date(article.optLong(Article.ARTICLE_CREATE_TIME)));
-                followingUserNotification.put(Notification.NOTIFICATION_HAS_READ,
-                        notification.optBoolean(Notification.NOTIFICATION_HAS_READ));
-                followingUserNotification.put(Common.TYPE, Article.ARTICLE);
-                followingUserNotification.put(Article.ARTICLE_TYPE, article.optInt(Article.ARTICLE_TYPE));
-
-                final String tagsStr = article.optString(Article.ARTICLE_TAGS);
-                followingUserNotification.put(Article.ARTICLE_TAGS, tagsStr);
-                final List<JSONObject> tags = buildTagObjs(tagsStr);
-                followingUserNotification.put(Article.ARTICLE_T_TAG_OBJS, (Object) tags);
-
-                followingUserNotification.put(Article.ARTICLE_COMMENT_CNT, article.optInt(Article.ARTICLE_COMMENT_CNT));
-                followingUserNotification.put(Article.ARTICLE_PERFECT, article.optInt(Article.ARTICLE_PERFECT));
-
-                rslts.add(followingUserNotification);
             }
 
             return ret;
         } catch (final RepositoryException e) {
-            LOGGER.log(Level.ERROR, "Gets [followingUser] notifications", e);
+            LOGGER.log(Level.ERROR, "Gets [following] notifications", e);
 
             throw new ServiceException(e);
         }
