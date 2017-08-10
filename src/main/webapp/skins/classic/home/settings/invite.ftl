@@ -7,7 +7,7 @@
             </div>
             <div class="module-panel form">
                 <input readonly="readonly" type="text" value="${serverScheme}://${serverHost}/register?r=${currentUser.userName}" onclick="this.select()"/>
-                <button class="red btn" id="shareClipboard">${copyLabel}</button>
+                <button class="btn" id="shareClipboard">${copyLabel}</button>
             </div>
         </div>
     </#if>
@@ -40,7 +40,7 @@
     <div class="module-panel form fn-clear">
         <input id="invitecode" type="text" placeholder="${inputInvitecodeLabel}"/><br/><br/>
         <div class="tip" id="invitecodeStateTip"></div><br/>
-        <button class="green fn-right" onclick="Settings.queryInvitecode('${csrfToken}')">${submitLabel}</button>
+        <button class="fn-right" onclick="Settings.queryInvitecode('${csrfToken}')">${submitLabel}</button>
     </div>
 </div>
 </#if>

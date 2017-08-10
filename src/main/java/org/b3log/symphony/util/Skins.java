@@ -19,13 +19,14 @@ package org.b3log.symphony.util;
 
 import freemarker.template.Configuration;
 import freemarker.template.TemplateExceptionHandler;
+import org.b3log.latke.logging.Logger;
+import org.b3log.latke.servlet.AbstractServletListener;
+
+import javax.servlet.ServletContext;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
-import javax.servlet.ServletContext;
-import org.b3log.latke.logging.Logger;
-import org.b3log.latke.servlet.AbstractServletListener;
 
 /**
  * Skin utilities.
@@ -37,18 +38,17 @@ import org.b3log.latke.servlet.AbstractServletListener;
 public final class Skins {
 
     /**
-     * Logger.
-     */
-    private static final Logger LOGGER = Logger.getLogger(Skins.class.getName());
-
-    /**
      * FreeMarker template configurations holder.
-     *
      * <p>
      * &lt;skinDirName, Configuration&gt;
      * </p>
      */
     public static final Map<String, Configuration> TEMPLATE_HOLDER = new HashMap<>();
+
+    /**
+     * Logger.
+     */
+    private static final Logger LOGGER = Logger.getLogger(Skins.class);
 
     static {
         final ServletContext servletContext = AbstractServletListener.getServletContext();

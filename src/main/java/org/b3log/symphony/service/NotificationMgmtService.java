@@ -18,6 +18,7 @@
 package org.b3log.symphony.service;
 
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.repository.*;
@@ -32,7 +33,6 @@ import org.b3log.symphony.repository.NotificationRepository;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +42,7 @@ import java.util.Set;
  * Notification management service.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.15.1.3, Mar 12, 2017
+ * @version 1.15.2.3, May 18, 2017
  * @since 0.2.5
  */
 @Service
@@ -51,7 +51,7 @@ public class NotificationMgmtService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(NotificationMgmtService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(NotificationMgmtService.class);
 
     /**
      * Notification repository.
@@ -490,6 +490,9 @@ public class NotificationMgmtService {
 
         try {
             final JSONObject record = notificationRepository.get(id);
+            if (null == record) {
+                return;
+            }
 
             record.put(Notification.NOTIFICATION_HAS_READ, true);
 

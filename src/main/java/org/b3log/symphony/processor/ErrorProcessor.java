@@ -17,11 +17,8 @@
  */
 package org.b3log.symphony.processor;
 
-import java.util.Map;
-import org.b3log.latke.ioc.inject.Inject;;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringUtils;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.service.LangPropsService;
@@ -38,8 +35,12 @@ import org.b3log.symphony.model.UserExt;
 import org.b3log.symphony.processor.advice.PermissionGrant;
 import org.b3log.symphony.processor.advice.stopwatch.StopwatchEndAdvice;
 import org.b3log.symphony.processor.advice.stopwatch.StopwatchStartAdvice;
-import org.b3log.symphony.service.TimelineMgmtService;
 import org.b3log.symphony.service.DataModelService;
+import org.b3log.symphony.service.TimelineMgmtService;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 /**
  * Error processor.
@@ -54,7 +55,7 @@ public class ErrorProcessor {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(ErrorProcessor.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ErrorProcessor.class);
 
     /**
      * Language service.
@@ -77,9 +78,9 @@ public class ErrorProcessor {
     /**
      * Handles the error.
      *
-     * @param context the specified context
-     * @param request the specified HTTP servlet request
-     * @param response the specified HTTP servlet response
+     * @param context    the specified context
+     * @param request    the specified HTTP servlet request
+     * @param response   the specified HTTP servlet response
      * @param statusCode the specified status code
      * @throws Exception exception
      */
@@ -87,12 +88,11 @@ public class ErrorProcessor {
     @Before(adviceClass = StopwatchStartAdvice.class)
     @After(adviceClass = {PermissionGrant.class, StopwatchEndAdvice.class})
     public void handleErrorPage(final HTTPRequestContext context, final HttpServletRequest request,
-            final HttpServletResponse response, final String statusCode) throws Exception {
+                                final HttpServletResponse response, final String statusCode) throws Exception {
         if (StringUtils.equals("GET", request.getMethod())) {
             final String requestURI = request.getRequestURI();
             final String templateName = statusCode + ".ftl";
-            LOGGER.log(Level.TRACE, "Shows error page[requestURI={0}, templateName={1}]",
-                    new Object[]{requestURI, templateName});
+            LOGGER.log(Level.TRACE, "Shows error page[requestURI={0}, templateName={1}]", requestURI, templateName);
 
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer(request);
             renderer.setTemplateName("error/" + templateName);

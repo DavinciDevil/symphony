@@ -21,6 +21,7 @@ import com.qiniu.util.Auth;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.Pagination;
@@ -47,15 +48,12 @@ import org.b3log.symphony.service.*;
 import org.b3log.symphony.util.*;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 
 /**
  * User processor.
- * <p>
- * For user
  * <ul>
  * <li>User articles (/member/{userName}), GET</li>
  * <li>User comments (/member/{userName}/comments), GET</li>
@@ -76,7 +74,6 @@ import java.util.*;
  * <li>Updates emotions (/settings/emotionList), POST</li>
  * <li>Password (/settings/password), POST</li>
  * <li>Point buy invitecode (/point/buy-invitecode), POST</li>
- * <li>SyncUser (/apis/user), POST</li>
  * <li>Lists usernames (/users/names), GET</li>
  * <li>Lists emotions (/users/emotions), GET</li>
  * <li>Exports posts(article/comment) to a file (/export/posts), POST</li>
@@ -84,12 +81,11 @@ import java.util.*;
  * <li>Shows link forge (/member/{userName}/forge/link), GET</li>
  * <li>i18n (/settings/i18n), POST</li>
  * </ul>
- * </p>
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 1.26.18.35, Mar 9, 2017
+ * @version 1.26.21.36, Jul 21, 2017
  * @since 0.2.0
  */
 @RequestProcessor
@@ -952,8 +948,13 @@ public class UserProcessor {
                 user.optString(Keys.OBJECT_ID), Article.ARTICLE_ANONYMOUS_C_PUBLIC, pageNum, pageSize);
         dataModel.put(Common.USER_HOME_ARTICLES, userArticles);
 
-        final int articleCnt = user.optInt(UserExt.USER_ARTICLE_COUNT);
-        final int pageCount = (int) Math.ceil((double) articleCnt / (double) pageSize);
+        int recordCount = 0;
+        int pageCount = 0;
+        if (!userArticles.isEmpty()) {
+            final JSONObject first = userArticles.get(0);
+            pageCount = first.optInt(Pagination.PAGINATION_PAGE_COUNT);
+            recordCount = first.optInt(Pagination.PAGINATION_RECORD_COUNT);
+        }
 
         final List<Integer> pageNums = Paginator.paginate(pageNum, pageSize, pageCount, windowSize);
         if (!pageNums.isEmpty()) {
@@ -964,7 +965,7 @@ public class UserProcessor {
         dataModel.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         dataModel.put(Pagination.PAGINATION_PAGE_COUNT, pageCount);
         dataModel.put(Pagination.PAGINATION_PAGE_NUMS, pageNums);
-        dataModel.put(Pagination.PAGINATION_RECORD_COUNT, articleCnt);
+        dataModel.put(Pagination.PAGINATION_RECORD_COUNT, recordCount);
 
         final JSONObject currentUser = Sessions.currentUser(request);
         if (null == currentUser) {
@@ -1032,8 +1033,13 @@ public class UserProcessor {
                 user.optString(Keys.OBJECT_ID), Comment.COMMENT_ANONYMOUS_C_PUBLIC, pageNum, pageSize, currentUser);
         dataModel.put(Common.USER_HOME_COMMENTS, userComments);
 
-        final int commentCnt = user.optInt(UserExt.USER_COMMENT_COUNT);
-        final int pageCount = (int) Math.ceil((double) commentCnt / (double) pageSize);
+        int recordCount = 0;
+        int pageCount = 0;
+        if (!userComments.isEmpty()) {
+            final JSONObject first = userComments.get(0);
+            pageCount = first.optInt(Pagination.PAGINATION_PAGE_COUNT);
+            recordCount = first.optInt(Pagination.PAGINATION_RECORD_COUNT);
+        }
 
         final List<Integer> pageNums = Paginator.paginate(pageNum, pageSize, pageCount, windowSize);
         if (!pageNums.isEmpty()) {
@@ -1044,7 +1050,7 @@ public class UserProcessor {
         dataModel.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         dataModel.put(Pagination.PAGINATION_PAGE_COUNT, pageCount);
         dataModel.put(Pagination.PAGINATION_PAGE_NUMS, pageNums);
-        dataModel.put(Pagination.PAGINATION_RECORD_COUNT, commentCnt);
+        dataModel.put(Pagination.PAGINATION_RECORD_COUNT, recordCount);
 
         dataModel.put(Common.TYPE, "comments");
     }
@@ -1341,7 +1347,7 @@ public class UserProcessor {
             for (final JSONObject followingArticle : followingArticles) {
                 final String homeUserFollowingArticleId = followingArticle.optString(Keys.OBJECT_ID);
 
-                followingArticle.put(Common.IS_FOLLOWING, followQueryService.isFollowing(followerId, homeUserFollowingArticleId, Follow.FOLLOWING_TYPE_C_ARTICLE));
+                followingArticle.put(Common.IS_FOLLOWING, followQueryService.isFollowing(followerId, homeUserFollowingArticleId, Follow.FOLLOWING_TYPE_C_ARTICLE_WATCH));
             }
         }
 
@@ -1422,6 +1428,10 @@ public class UserProcessor {
                 final String homeUserFollowerUserId = followerUser.optString(Keys.OBJECT_ID);
 
                 followerUser.put(Common.IS_FOLLOWING, followQueryService.isFollowing(followerId, homeUserFollowerUserId, Follow.FOLLOWING_TYPE_C_USER));
+            }
+
+            if (followerId.equals(followingId)) {
+                notificationMgmtService.makeRead(followingId, Notification.DATA_TYPE_C_NEW_FOLLOWER);
             }
         }
 
@@ -1938,108 +1948,6 @@ public class UserProcessor {
             LOGGER.log(Level.ERROR, msg, e);
 
             context.renderMsg(msg);
-        }
-    }
-
-    /**
-     * Sync user. Experimental API.
-     *
-     * @param context  the specified context
-     * @param request  the specified request
-     * @param response the specified response
-     * @throws Exception exception
-     */
-    @RequestProcessing(value = "/apis/user", method = HTTPRequestMethod.POST)
-    public void syncUser(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
-        context.renderJSON();
-
-        final JSONObject requestJSONObject = Requests.parseRequestJSONObject(request, response);
-
-        final String name = requestJSONObject.optString(User.USER_NAME);
-        final String email = requestJSONObject.optString(User.USER_EMAIL);
-        final String password = requestJSONObject.optString(User.USER_PASSWORD);
-        final String clientHost = requestJSONObject.optString(Client.CLIENT_HOST);
-        final String clientB3Key = requestJSONObject.optString(UserExt.USER_B3_KEY);
-        final String addArticleURL = clientHost + "/apis/symphony/article";
-        final String updateArticleURL = clientHost + "/apis/symphony/article";
-        final String addCommentURL = clientHost + "/apis/symphony/comment";
-
-        if (UserRegisterValidation.invalidUserName(name)) {
-            LOGGER.log(Level.WARN, "Sync add user[name={0}, host={1}] error, caused by the username is invalid",
-                    name, clientHost);
-
-            return;
-        }
-
-        String maybeIP = StringUtils.substringBetween(clientHost, "://", ":");
-        maybeIP = StringUtils.substringBefore(maybeIP, "/");
-
-        if (Networks.isIPv4(maybeIP)) {
-            LOGGER.log(Level.WARN, "Sync add user[name={0}, host={1}] error, caused by the client host is IPv4",
-                    name, clientHost);
-
-            return;
-        }
-
-        JSONObject user = userQueryService.getUserByEmail(email);
-        if (null == user) {
-            user = new JSONObject();
-            user.put(User.USER_NAME, name);
-            user.put(User.USER_EMAIL, email);
-            user.put(User.USER_PASSWORD, password);
-            user.put(UserExt.USER_LANGUAGE, "zh_CN");
-            user.put(UserExt.USER_B3_KEY, clientB3Key);
-            user.put(UserExt.USER_B3_CLIENT_ADD_ARTICLE_URL, addArticleURL);
-            user.put(UserExt.USER_B3_CLIENT_UPDATE_ARTICLE_URL, updateArticleURL);
-            user.put(UserExt.USER_B3_CLIENT_ADD_COMMENT_URL, addCommentURL);
-            user.put(UserExt.USER_STATUS, UserExt.USER_STATUS_C_VALID); // One Move
-
-            try {
-                final String id = userMgmtService.addUser(user);
-                user.put(Keys.OBJECT_ID, id);
-
-                userMgmtService.updateSyncB3(user);
-
-                LOGGER.log(Level.INFO, "Added a user[{0}] via Solo[{1}] sync", name, clientHost);
-
-                context.renderTrueResult();
-            } catch (final ServiceException e) {
-                LOGGER.log(Level.ERROR, "Sync add user[name={0}, email={1}, host={2}] error: {3}",
-                        name, email, clientHost, e.getMessage());
-            }
-
-            return;
-        }
-
-        String userKey = user.optString(UserExt.USER_B3_KEY);
-        if (StringUtils.isBlank(userKey) || (Strings.isNumeric(userKey) && userKey.length() == clientB3Key.length())) {
-            userKey = clientB3Key;
-
-            user.put(UserExt.USER_B3_KEY, userKey);
-            userMgmtService.updateUser(user.optString(Keys.OBJECT_ID), user);
-        }
-
-        if (!userKey.equals(clientB3Key)) {
-            LOGGER.log(Level.WARN, "Sync update user[name={0}, email={1}, host={2}] B3Key dismatch [sym={3}, solo={4}]",
-                    name, email, clientHost, user.optString(UserExt.USER_B3_KEY), clientB3Key);
-
-            return;
-        }
-
-        user.put(UserExt.USER_B3_KEY, clientB3Key);
-        user.put(UserExt.USER_B3_CLIENT_ADD_ARTICLE_URL, addArticleURL);
-        user.put(UserExt.USER_B3_CLIENT_UPDATE_ARTICLE_URL, updateArticleURL);
-        user.put(UserExt.USER_B3_CLIENT_ADD_COMMENT_URL, addCommentURL);
-
-        try {
-            userMgmtService.updateSyncB3(user);
-
-            LOGGER.log(Level.INFO, "Updated a user[name={0}] via Solo[{1}] sync", name, clientHost);
-
-            context.renderTrueResult();
-        } catch (final ServiceException e) {
-            LOGGER.log(Level.ERROR, "Sync update user[name=" + name + ", host=" + clientHost + "] error", e);
         }
     }
 

@@ -20,6 +20,7 @@ package org.b3log.symphony.processor.channel;
 import org.b3log.latke.Keys;
 import org.b3log.latke.ioc.LatkeBeanManager;
 import org.b3log.latke.ioc.Lifecycle;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.User;
 import org.b3log.latke.service.ServiceException;
@@ -29,7 +30,6 @@ import org.b3log.symphony.service.UserQueryService;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.util.Map;
@@ -46,7 +46,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.0.0.3, Apr 6, 2017
+ * @version 1.0.0.4, Jul 24, 2017
  * @since 2.1.0
  */
 @ServerEndpoint(value = "/gobang-game-channel", configurator = Channels.WebSocketConfigurator.class)
@@ -55,27 +55,32 @@ public class GobangChannel {
     /**
      * Session set.
      */
-    public static final Map<String, Session> SESSIONS = new ConcurrentHashMap<String, Session>();
+    public static final Map<String, Session> SESSIONS = new ConcurrentHashMap<>();
+
     /**
      * 正在进行中的棋局.
      * String参数代表开局者（选手1）的userId
      * ChessGame参数代表棋局
      */
-    public static final Map<String, ChessGame> chessPlaying = new ConcurrentHashMap<String, ChessGame>();
+    public static final Map<String, ChessGame> chessPlaying = new ConcurrentHashMap<>();
+
     /**
      * 对手，与正在进行的棋局Map配套使用.
      * 第一个String代表player1,
      * 第二个String代表player2
      */
-    public static final Map<String, String> antiPlayer = new ConcurrentHashMap<String, String>();
+    public static final Map<String, String> antiPlayer = new ConcurrentHashMap<>();
+
     /**
      * 等待的棋局队列.
      */
-    public static final Queue<ChessGame> chessRandomWait = new ConcurrentLinkedQueue<ChessGame>();
+    public static final Queue<ChessGame> chessRandomWait = new ConcurrentLinkedQueue<>();
+
     /**
      * Logger.
      */
     private static final Logger LOGGER = Logger.getLogger(GobangChannel.class);
+
     /**
      * Activity management service.
      */
@@ -99,13 +104,13 @@ public class GobangChannel {
         final String userName = user.optString(User.USER_NAME);
         boolean playing = false;
         LOGGER.debug("new connection from " + userName);
-        if(SESSIONS.containsKey(userId)){
+        if (SESSIONS.containsKey(userId)) {
             JSONObject sendText = new JSONObject();
             sendText.put("type", 6);
             sendText.put("message", "【系统】：您已在匹配队列中，请勿开始多个游戏，如需打开新的窗口，请先关闭原窗口再开始");
             session.getAsyncRemote().sendText(sendText.toString());
             return;
-        }else{
+        } else {
             SESSIONS.put(userId, session);
         }
         for (String temp : chessPlaying.keySet()) {
@@ -261,16 +266,16 @@ public class GobangChannel {
                     if (flag) {
                         final ActivityMgmtService activityMgmtService = beanManager.getReference(ActivityMgmtService.class);
                         activityMgmtService.collectGobang(player, Pointtransfer.TRANSFER_SUM_C_ACTIVITY_GOBANG_START * 2);
-
-                        chessPlaying.remove(chessGame);
+                        SESSIONS.remove(player);
+                        SESSIONS.remove(anti);
                     }
                 }
                 break;
             case 7://和棋
-                if("request".equals(jsonObject.optString("drawType"))){
-                    sendText.put("type",7);
+                if ("request".equals(jsonObject.optString("drawType"))) {
+                    sendText.put("type", 7);
                     SESSIONS.get(anti).getAsyncRemote().sendText(sendText.toString());
-                }else if("yes".equals(jsonObject.optString("drawType"))){
+                } else if ("yes".equals(jsonObject.optString("drawType"))) {
                     sendText.put("type", 6);
                     sendText.put("message", "【系统】：双方和棋，积分返还，游戏结束");
                     chessPlaying.remove(player);
@@ -278,11 +283,13 @@ public class GobangChannel {
                     antiPlayer.remove(player);
                     antiPlayer.remove(anti);
                     final ActivityMgmtService activityMgmtService = beanManager.getReference(ActivityMgmtService.class);
-                    activityMgmtService.collectGobang(player, Pointtransfer.TRANSFER_SUM_C_ACTIVITY_GOBANG_START );
+                    activityMgmtService.collectGobang(player, Pointtransfer.TRANSFER_SUM_C_ACTIVITY_GOBANG_START);
                     activityMgmtService.collectGobang(anti, Pointtransfer.TRANSFER_SUM_C_ACTIVITY_GOBANG_START);
                     SESSIONS.get(player).getAsyncRemote().sendText(sendText.toString());
                     SESSIONS.get(anti).getAsyncRemote().sendText(sendText.toString());
-                }else if("no".equals(jsonObject.optString("drawType"))){
+                    SESSIONS.remove(player);
+                    SESSIONS.remove(anti);
+                } else if ("no".equals(jsonObject.optString("drawType"))) {
                     sendText.put("type", 6);
                     sendText.put("message", "【系统】：对手拒绝和棋，请继续下棋");
                     SESSIONS.get(player).getAsyncRemote().sendText(sendText.toString());

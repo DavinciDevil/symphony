@@ -17,11 +17,8 @@
  */
 package org.b3log.symphony.processor;
 
-import org.b3log.symphony.processor.channel.ArticleChannel;
-import org.b3log.latke.ioc.inject.Inject;;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.servlet.HTTPRequestContext;
 import org.b3log.latke.servlet.HTTPRequestMethod;
@@ -29,20 +26,21 @@ import org.b3log.latke.servlet.annotation.RequestProcessing;
 import org.b3log.latke.servlet.annotation.RequestProcessor;
 import org.b3log.symphony.SymphonyServletListener;
 import org.b3log.symphony.model.Common;
+import org.b3log.symphony.processor.channel.ArticleChannel;
 import org.b3log.symphony.processor.channel.ArticleListChannel;
 import org.b3log.symphony.processor.channel.ChatRoomChannel;
 import org.b3log.symphony.service.OptionQueryService;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * Running status processor.
- *
- * <p>
  * <ul>
  * <li>Report running status (/cron/status), GET</li>
  * </ul>
- * </p>
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @version 1.1.0.3, Jul 19, 2016
@@ -65,14 +63,14 @@ public class StatusProcessor {
     /**
      * Reports running status.
      *
-     * @param context the specified context
-     * @param request the specified request
+     * @param context  the specified context
+     * @param request  the specified request
      * @param response the specified response
      * @throws Exception exception
      */
     @RequestProcessing(value = "/cron/status", method = HTTPRequestMethod.GET)
     public void reportStatus(final HTTPRequestContext context,
-            final HttpServletRequest request, final HttpServletResponse response) throws Exception {
+                             final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String key = Symphonys.get("keyOfSymphony");
         if (!key.equals(request.getParameter("key"))) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);

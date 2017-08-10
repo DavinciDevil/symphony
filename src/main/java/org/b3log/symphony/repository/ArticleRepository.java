@@ -17,22 +17,18 @@
  */
 package org.b3log.symphony.repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.b3log.latke.ioc.inject.Inject;;
 import org.b3log.latke.Keys;
-import org.b3log.latke.repository.AbstractRepository;
-import org.b3log.latke.repository.CompositeFilterOperator;
-import org.b3log.latke.repository.FilterOperator;
-import org.b3log.latke.repository.PropertyFilter;
-import org.b3log.latke.repository.Query;
-import org.b3log.latke.repository.RepositoryException;
+import org.b3log.latke.ioc.inject.Inject;
+import org.b3log.latke.repository.*;
 import org.b3log.latke.repository.annotation.Repository;
 import org.b3log.latke.util.CollectionUtils;
 import org.b3log.symphony.cache.ArticleCache;
 import org.b3log.symphony.model.Article;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Article repository.
@@ -72,7 +68,6 @@ public class ArticleRepository extends AbstractRepository {
         }
 
         ret = super.get(id);
-
         if (null == ret) {
             return null;
         }
@@ -92,7 +87,7 @@ public class ArticleRepository extends AbstractRepository {
 
     @Override
     public List<JSONObject> getRandomly(final int fetchSize) throws RepositoryException {
-        final List<JSONObject> ret = new ArrayList<JSONObject>();
+        final List<JSONObject> ret = new ArrayList<>();
 
         final double mid = Math.random();
 
@@ -105,12 +100,10 @@ public class ArticleRepository extends AbstractRepository {
         final JSONObject result1 = get(query);
         final JSONArray array1 = result1.optJSONArray(Keys.RESULTS);
 
-        final List<JSONObject> list1 = CollectionUtils.<JSONObject>jsonArrayToList(array1);
-
+        final List<JSONObject> list1 = CollectionUtils.jsonArrayToList(array1);
         ret.addAll(list1);
 
         final int reminingSize = fetchSize - array1.length();
-
         if (0 != reminingSize) { // Query for remains
             query = new Query();
             query.setFilter(
@@ -124,7 +117,7 @@ public class ArticleRepository extends AbstractRepository {
             final JSONObject result2 = get(query);
             final JSONArray array2 = result2.optJSONArray(Keys.RESULTS);
 
-            final List<JSONObject> list2 = CollectionUtils.<JSONObject>jsonArrayToList(array2);
+            final List<JSONObject> list2 = CollectionUtils.jsonArrayToList(array2);
 
             ret.addAll(list2);
         }
@@ -145,7 +138,6 @@ public class ArticleRepository extends AbstractRepository {
 
         final JSONObject result = get(query);
         final JSONArray array = result.optJSONArray(Keys.RESULTS);
-
         if (0 == array.length()) {
             return null;
         }

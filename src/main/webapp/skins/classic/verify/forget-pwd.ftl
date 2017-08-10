@@ -14,9 +14,10 @@
             <div class="wrapper verify">
                 <div class="verify-wrap">
                     <div class="form">
-                        ${logoIcon2}
+                        <svg><use xlink:href="#logo"></use></svg>
+
                         <div class="input-wrap">
-                            <span class="icon-email"></span>
+                            <svg><use xlink:href="#email"></use></svg>
                             <input id="fpwdEmail" type="text" placeholder="${emailLabel}" autocomplete="off" autofocus="autofocus" />
                         </div>
                         <div class="input-wrap">
@@ -24,8 +25,8 @@
                             <input type="text" id="fpwdSecurityCode" class="captcha-input" placeholder="${captchaLabel}" />
                         </div>
                         <div id="fpwdTip" class="tip"></div>
-                        <button onclick="Verify.forgetPwd()">${forgetPwdLabel}</button>
-                        <button class="green" onclick="Util.goLogin()">${loginLabel}</button>
+                        <button class="green" onclick="Verify.forgetPwd()">${forgetPwdLabel}</button>
+                        <button onclick="Util.goLogin()">${loginLabel}</button>
                     </div>
                 </div>
                 <div class="intro content-reset">

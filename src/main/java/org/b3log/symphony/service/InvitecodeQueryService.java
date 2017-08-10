@@ -17,19 +17,12 @@
  */
 package org.b3log.symphony.service;
 
-import java.util.Collections;
-import java.util.List;
-import org.b3log.latke.ioc.inject.Inject;;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.Pagination;
-import org.b3log.latke.repository.CompositeFilterOperator;
-import org.b3log.latke.repository.FilterOperator;
-import org.b3log.latke.repository.PropertyFilter;
-import org.b3log.latke.repository.Query;
-import org.b3log.latke.repository.RepositoryException;
-import org.b3log.latke.repository.SortDirection;
+import org.b3log.latke.repository.*;
 import org.b3log.latke.service.ServiceException;
 import org.b3log.latke.service.annotation.Service;
 import org.b3log.latke.util.CollectionUtils;
@@ -38,6 +31,9 @@ import org.b3log.symphony.model.Invitecode;
 import org.b3log.symphony.repository.InvitecodeRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Invitecode query service.
@@ -52,7 +48,7 @@ public class InvitecodeQueryService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(InvitecodeQueryService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(InvitecodeQueryService.class);
 
     /**
      * Invitecode repository.
@@ -117,13 +113,12 @@ public class InvitecodeQueryService {
      * Gets invitecodes by the specified request json object.
      *
      * @param requestJSONObject the specified request json object, for example,      <pre>
-     * {
-     *     "paginationCurrentPageNum": 1,
-     *     "paginationPageSize": 20,
-     *     "paginationWindowSize": 10
-     * }, see {@link Pagination} for more details
-     * </pre>
-     *
+     *                                                   {
+     *                                                       "paginationCurrentPageNum": 1,
+     *                                                       "paginationPageSize": 20,
+     *                                                       "paginationWindowSize": 10
+     *                                                   }, see {@link Pagination} for more details
+     *                                                   </pre>
      * @return for example,      <pre>
      * {
      *     "pagination": {
@@ -138,7 +133,6 @@ public class InvitecodeQueryService {
      *      }, ....]
      * }
      * </pre>
-     *
      * @throws ServiceException service exception
      * @see Pagination
      */
@@ -190,7 +184,6 @@ public class InvitecodeQueryService {
      *     ....
      * }
      * </pre>, returns {@code null} if not found
-     *
      * @throws ServiceException service exception
      */
     public JSONObject getInvitecodeById(final String invitecodeId) throws ServiceException {
@@ -215,7 +208,6 @@ public class InvitecodeQueryService {
      *     ....
      * }
      * </pre>, returns {@code null} if not found
-     *
      * @throws ServiceException service exception
      */
     public JSONObject getInvitecodeByUserId(final String userId) throws ServiceException {

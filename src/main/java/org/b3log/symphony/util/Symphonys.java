@@ -17,50 +17,45 @@
  */
 package org.b3log.symphony.util;
 
+import org.apache.commons.io.IOUtils;
+import org.b3log.latke.Keys;
+import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.LatkeBeanManager;
+import org.b3log.latke.ioc.Lifecycle;
+import org.b3log.latke.logging.Level;
+import org.b3log.latke.logging.Logger;
+import org.b3log.latke.repository.jdbc.JdbcRepository;
+import org.b3log.latke.service.LangPropsService;
+import org.b3log.latke.service.LangPropsServiceImpl;
+import org.b3log.latke.util.CollectionUtils;
+import org.b3log.symphony.SymphonyServletListener;
+import org.b3log.symphony.model.Common;
+import org.b3log.symphony.model.Option;
+import org.b3log.symphony.service.OptionQueryService;
+import org.json.JSONObject;
+
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import org.apache.commons.io.IOUtils;
-import org.b3log.latke.Keys;
-import org.b3log.latke.Latkes;
-import org.b3log.latke.RuntimeMode;
-import org.b3log.latke.ioc.LatkeBeanManager;
-import org.b3log.latke.ioc.Lifecycle;
-import org.b3log.latke.logging.Level;
-import org.b3log.latke.logging.Logger;
-import org.b3log.latke.service.LangPropsService;
-import org.b3log.latke.service.LangPropsServiceImpl;
-import org.b3log.latke.util.CollectionUtils;
-import org.b3log.symphony.SymphonyServletListener;
-import org.json.JSONObject;
 
 /**
  * Symphony utilities.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.7.0.7, Jan 8, 2017
+ * @version 1.7.1.9, Jul 8, 2017
  * @since 0.1.0
  */
 public final class Symphonys {
-
-    /**
-     * Logger.
-     */
-    private static final Logger LOGGER = Logger.getLogger(Symphonys.class);
 
     /**
      * Configurations.
@@ -91,6 +86,11 @@ public final class Symphonys {
      * Thread pool.
      */
     public static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(50);
+
+    /**
+     * Logger.
+     */
+    private static final Logger LOGGER = Logger.getLogger(Symphonys.class);
 
     static {
         // Loads reserved tags
@@ -160,9 +160,16 @@ public final class Symphonys {
 
                 HttpURLConnection httpConn = null;
                 OutputStream outputStream = null;
-
                 try {
                     final LatkeBeanManager beanManager = Lifecycle.getBeanManager();
+                    final OptionQueryService optionQueryService = beanManager.getReference(OptionQueryService.class);
+
+                    final JSONObject statistic = optionQueryService.getStatistic();
+                    final int articleCount = statistic.optInt(Option.ID_C_STATISTIC_ARTICLE_COUNT);
+                    if (articleCount < 66) {
+                        return;
+                    }
+
                     final LangPropsService langPropsService = beanManager.getReference(LangPropsServiceImpl.class);
 
                     httpConn = (HttpURLConnection) new URL("https://rhythm.b3log.org/sym").openConnection();
@@ -170,7 +177,7 @@ public final class Symphonys {
                     httpConn.setReadTimeout(10000);
                     httpConn.setDoOutput(true);
                     httpConn.setRequestMethod("POST");
-                    httpConn.setRequestProperty("User-Agent", "B3log Symphony/" + SymphonyServletListener.VERSION);
+                    httpConn.setRequestProperty(Common.USER_AGENT, USER_AGENT_BOT);
 
                     httpConn.connect();
 
@@ -195,9 +202,17 @@ public final class Symphonys {
                             // ignore
                         }
                     }
+
+                    JdbcRepository.dispose();
                 }
             }
-        }, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 2);
+        }, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 12);
+    }
+
+    /**
+     * Private default constructor.
+     */
+    private Symphonys() {
     }
 
     /**
@@ -214,7 +229,7 @@ public final class Symphonys {
             httpConn.setConnectTimeout(10000);
             httpConn.setReadTimeout(10000);
             httpConn.setRequestMethod("GET");
-            httpConn.setRequestProperty("User-Agent", "B3log Symphony/" + SymphonyServletListener.VERSION);
+            httpConn.setRequestProperty(Common.USER_AGENT, "B3log Symphony/" + SymphonyServletListener.VERSION);
 
             httpConn.connect();
 
@@ -249,7 +264,7 @@ public final class Symphonys {
      * @return {@code true} if it runs on development environment, {@code false} otherwise
      */
     public static boolean runsOnDevEnv() {
-        return RuntimeMode.DEVELOPMENT == Latkes.getRuntimeMode();
+        return Latkes.RuntimeMode.DEVELOPMENT == Latkes.getRuntimeMode();
     }
 
     /**
@@ -321,11 +336,5 @@ public final class Symphonys {
         }
 
         return Long.valueOf(stringValue);
-    }
-
-    /**
-     * Private default constructor.
-     */
-    private Symphonys() {
     }
 }

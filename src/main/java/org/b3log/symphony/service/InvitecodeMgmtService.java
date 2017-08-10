@@ -17,17 +17,12 @@
  */
 package org.b3log.symphony.service;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import org.apache.commons.lang.RandomStringUtils;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
-import org.b3log.latke.repository.CompositeFilterOperator;
-import org.b3log.latke.repository.FilterOperator;
-import org.b3log.latke.repository.PropertyFilter;
-import org.b3log.latke.repository.Query;
-import org.b3log.latke.repository.RepositoryException;
-import org.b3log.latke.repository.Transaction;
+import org.b3log.latke.repository.*;
 import org.b3log.latke.repository.annotation.Transactional;
 import org.b3log.latke.service.ServiceException;
 import org.b3log.latke.service.annotation.Service;
@@ -51,7 +46,7 @@ public class InvitecodeMgmtService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(InvitecodeMgmtService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(InvitecodeMgmtService.class);
 
     /**
      * Invitecode repository.
@@ -100,7 +95,7 @@ public class InvitecodeMgmtService {
     /**
      * User generates an invitecode.
      *
-     * @param userId the specified user id
+     * @param userId   the specified user id
      * @param userName the specified user name
      * @return invitecode
      */
@@ -137,7 +132,7 @@ public class InvitecodeMgmtService {
      * Admin generates invitecodes with the specified quantity and memo.
      *
      * @param quantity the specified quantity
-     * @param memo the specified memo
+     * @param memo     the specified memo
      * @throws ServiceException service exception
      */
     public void adminGenInvitecodes(final int quantity, final String memo) throws ServiceException {
@@ -171,7 +166,7 @@ public class InvitecodeMgmtService {
      * Updates the specified invitecode by the given invitecode id.
      *
      * @param invitecodeId the given invitecode id
-     * @param invitecode the specified invitecode
+     * @param invitecode   the specified invitecode
      * @throws ServiceException service exception
      */
     public void updateInvitecode(final String invitecodeId, final JSONObject invitecode) throws ServiceException {

@@ -20,6 +20,7 @@ package org.b3log.symphony.service;
 import org.apache.commons.lang.StringUtils;
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.Pagination;
@@ -43,14 +44,13 @@ import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import java.util.*;
 
 /**
  * Comment management service.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 2.11.9.25, Mar 22, 2017
+ * @version 2.11.9.27, May 12, 2017
  * @since 0.2.0
  */
 @Service
@@ -59,7 +59,13 @@ public class CommentQueryService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(CommentQueryService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(CommentQueryService.class);
+
+    /**
+     * Revision query service.
+     */
+    @Inject
+    private RevisionQueryService revisionQueryService;
 
     /**
      * Comment repository.
@@ -133,6 +139,7 @@ public class CommentQueryService {
                 break;
         }
 
+        Stopwatchs.start("Get comment page");
         try {
             final long num = commentRepository.count(numQuery);
             return (int) ((num / pageSize) + 1);
@@ -140,6 +147,8 @@ public class CommentQueryService {
             LOGGER.log(Level.ERROR, "Gets comment page failed", e);
 
             return 1;
+        } finally {
+            Stopwatchs.end();
         }
     }
 
@@ -584,24 +593,43 @@ public class CommentQueryService {
         }
 
         try {
-            final JSONObject result = commentRepository.get(query);
+            Stopwatchs.start("Query comments");
+            JSONObject result;
+            try {
+                result = commentRepository.get(query);
+            } finally {
+                Stopwatchs.end();
+            }
             final List<JSONObject> ret = CollectionUtils.<JSONObject>jsonArrayToList(result.optJSONArray(Keys.RESULTS));
 
             organizeComments(avatarViewMode, ret);
 
-            for (final JSONObject comment : ret) {
-                final String originalCmtId = comment.optString(Comment.COMMENT_ORIGINAL_COMMENT_ID);
-                if (StringUtils.isBlank(originalCmtId)) {
-                    continue;
+            Stopwatchs.start("Revision, paging, original");
+            try {
+                for (final JSONObject comment : ret) {
+                    final String commentId = comment.optString(Keys.OBJECT_ID);
+
+                    // Fill revision count
+                    comment.put(Comment.COMMENT_REVISION_COUNT,
+                            revisionQueryService.count(commentId, Revision.DATA_TYPE_C_COMMENT));
+
+                    final String originalCmtId = comment.optString(Comment.COMMENT_ORIGINAL_COMMENT_ID);
+                    if (StringUtils.isBlank(originalCmtId)) {
+                        continue;
+                    }
+
+                    // Fill page number
+                    comment.put(Pagination.PAGINATION_CURRENT_PAGE_NUM,
+                            getCommentPage(articleId, originalCmtId, sortMode, pageSize));
+
+                    // Fill original comment
+                    final JSONObject originalCmt = commentRepository.get(originalCmtId);
+                    organizeComment(avatarViewMode, originalCmt);
+                    comment.put(Comment.COMMENT_T_ORIGINAL_AUTHOR_THUMBNAIL_URL,
+                            originalCmt.optString(Comment.COMMENT_T_AUTHOR_THUMBNAIL_URL));
                 }
-
-                comment.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, getCommentPage(articleId, originalCmtId,
-                        sortMode, pageSize));
-
-                final JSONObject originalCmt = commentRepository.get(originalCmtId);
-                organizeComment(avatarViewMode, originalCmt);
-                comment.put(Comment.COMMENT_T_ORIGINAL_AUTHOR_THUMBNAIL_URL,
-                        originalCmt.optString(Comment.COMMENT_T_AUTHOR_THUMBNAIL_URL));
+            } finally {
+                Stopwatchs.end();
             }
 
             return ret;
@@ -640,6 +668,7 @@ public class CommentQueryService {
      * @throws ServiceException service exception
      * @see Pagination
      */
+
     public JSONObject getComments(final int avatarViewMode,
                                   final JSONObject requestJSONObject, final Map<String, Class<?>> commentFields) throws ServiceException {
         final JSONObject ret = new JSONObject();
@@ -719,8 +748,14 @@ public class CommentQueryService {
      * @throws RepositoryException repository exception
      */
     private void organizeComments(final int avatarViewMode, final List<JSONObject> comments) throws RepositoryException {
-        for (final JSONObject comment : comments) {
-            organizeComment(avatarViewMode, comment);
+        Stopwatchs.start("Organizes comments");
+
+        try {
+            for (final JSONObject comment : comments) {
+                organizeComment(avatarViewMode, comment);
+            }
+        } finally {
+            Stopwatchs.end();
         }
     }
 
@@ -802,8 +837,6 @@ public class CommentQueryService {
             return;
         }
 
-        genCommentContentUserName(comment);
-
         String commentContent = comment.optString(Comment.COMMENT_CONTENT);
 
         commentContent = shortLinkQueryService.linkArticle(commentContent);
@@ -812,6 +845,7 @@ public class CommentQueryService {
         commentContent = Markdowns.toHTML(commentContent);
         commentContent = Markdowns.clean(commentContent, "");
         commentContent = MP3Players.render(commentContent);
+        commentContent = VideoPlayers.render(commentContent);
 
         if (sync) {
             // "<i class='ft-small'>by 88250</i>"
@@ -828,34 +862,5 @@ public class CommentQueryService {
         }
 
         comment.put(Comment.COMMENT_CONTENT, commentContent);
-    }
-
-    /**
-     * Generates &#64;username home URL for the specified comment content.
-     *
-     * @param comment the specified comment
-     */
-    private void genCommentContentUserName(final JSONObject comment) {
-        Stopwatchs.start("Gen cmt content username");
-
-        String commentContent = comment.optString(Comment.COMMENT_CONTENT);
-        try {
-            try {
-                final Set<String> userNames = userQueryService.getUserNames(commentContent);
-                for (final String userName : userNames) {
-                    commentContent = commentContent.replace('@' + userName + " ",
-                            "@<a href='" + Latkes.getServePath() + "/member/" + userName + "'>" + userName + "</a> ");
-                }
-
-                commentContent = commentContent.replace("@participants ",
-                        "@<a href='https://hacpai.com/article/1458053458339' class='ft-red'>participants</a> ");
-            } catch (final ServiceException e) {
-                LOGGER.log(Level.ERROR, "Generates @username home URL for comment content failed", e);
-            }
-
-            comment.put(Comment.COMMENT_CONTENT, commentContent);
-        } finally {
-            Stopwatchs.end();
-        }
     }
 }

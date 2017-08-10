@@ -23,6 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.User;
@@ -52,7 +53,6 @@ import org.b3log.symphony.util.Sessions;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -62,15 +62,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Login/Register processor.
- * <p>
- * For user
  * <ul>
  * <li>Registration (/register), GET/POST</li>
  * <li>Login (/login), GET/POST</li>
  * <li>Logout (/logout), GET</li>
  * <li>Reset password (/reset-pwd), GET/POST</li>
  * </ul>
- * </p>
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://vanessa.b3log.org">LiYuan Li</a>
@@ -87,75 +84,90 @@ public class LoginProcessor {
      * </p>
      */
     public static final Map<String, JSONObject> WRONG_PWD_TRIES = new ConcurrentHashMap<>();
+
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(LoginProcessor.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(LoginProcessor.class);
+
     /**
      * User management service.
      */
     @Inject
     private UserMgmtService userMgmtService;
+
     /**
      * User query service.
      */
     @Inject
     private UserQueryService userQueryService;
+
     /**
      * Language service.
      */
     @Inject
     private LangPropsService langPropsService;
+
     /**
      * Pointtransfer management service.
      */
     @Inject
     private PointtransferMgmtService pointtransferMgmtService;
+
     /**
      * Data model service.
      */
     @Inject
     private DataModelService dataModelService;
+
     /**
      * Verifycode management service.
      */
     @Inject
     private VerifycodeMgmtService verifycodeMgmtService;
+
     /**
      * Verifycode query service.
      */
     @Inject
     private VerifycodeQueryService verifycodeQueryService;
+
     /**
      * Timeline management service.
      */
     @Inject
     private TimelineMgmtService timelineMgmtService;
+
     /**
      * Option query service.
      */
     @Inject
     private OptionQueryService optionQueryService;
+
     /**
      * Invitecode query service.
      */
     @Inject
     private InvitecodeQueryService invitecodeQueryService;
+
     /**
      * Invitecode management service.
      */
     @Inject
     private InvitecodeMgmtService invitecodeMgmtService;
+
     /**
      * Invitecode management service.
      */
     @Inject
     private NotificationMgmtService notificationMgmtService;
+
     /**
      * Role query service.
      */
     @Inject
     private RoleQueryService roleQueryService;
+
     /**
      * Tag query service.
      */

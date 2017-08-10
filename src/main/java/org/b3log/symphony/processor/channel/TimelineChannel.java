@@ -17,19 +17,15 @@
  */
 package org.b3log.symphony.processor.channel;
 
+import org.b3log.latke.logging.Logger;
+import org.json.JSONObject;
+
+import javax.websocket.*;
+import javax.websocket.server.ServerEndpoint;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.websocket.CloseReason;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
-import org.b3log.latke.logging.Logger;
-import org.json.JSONObject;
 
 /**
  * Timeline channel.
@@ -42,14 +38,36 @@ import org.json.JSONObject;
 public class TimelineChannel {
 
     /**
-     * Logger.
-     */
-    private static final Logger LOGGER = Logger.getLogger(TimelineChannel.class.getName());
-
-    /**
      * Session set.
      */
     public static final Set<Session> SESSIONS = Collections.newSetFromMap(new ConcurrentHashMap());
+
+    /**
+     * Logger.
+     */
+    private static final Logger LOGGER = Logger.getLogger(TimelineChannel.class);
+
+    /**
+     * Notifies the specified timeline message to browsers.
+     *
+     * @param message the specified message, for example
+     *                {
+     *                "type": "article",
+     *                "content": ""
+     *                }
+     */
+    public static void notifyTimeline(final JSONObject message) {
+        final String msgStr = message.toString();
+
+        final Iterator<Session> i = SESSIONS.iterator();
+        while (i.hasNext()) {
+            final Session session = i.next();
+
+            if (session.isOpen()) {
+                session.getAsyncRemote().sendText(msgStr);
+            }
+        }
+    }
 
     /**
      * Called when the socket connection with the browser is established.
@@ -64,7 +82,7 @@ public class TimelineChannel {
     /**
      * Called when the connection closed.
      *
-     * @param session session
+     * @param session     session
      * @param closeReason close reason
      */
     @OnClose
@@ -85,34 +103,11 @@ public class TimelineChannel {
      * Called in case of an error.
      *
      * @param session session
-     * @param error error
+     * @param error   error
      */
     @OnError
     public void onError(final Session session, final Throwable error) {
         removeSession(session);
-    }
-
-    /**
-     * Notifies the specified timeline message to browsers.
-     *
-     * @param message the specified message, for example      <pre>
-     * {
-     *     "type": "article",
-     *     "content": ""
-     * }
-     * </pre>
-     */
-    public static void notifyTimeline(final JSONObject message) {
-        final String msgStr = message.toString();
-
-        final Iterator<Session> i = SESSIONS.iterator();
-        while (i.hasNext()) {
-            final Session session = i.next();
-
-            if (session.isOpen()) {
-                session.getAsyncRemote().sendText(msgStr);
-            }
-        }
     }
 
     /**

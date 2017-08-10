@@ -27,15 +27,15 @@
                         <input id="articleTags" type="text" tabindex="3" 
                                value="<#if article??>${article.articleTags}<#else>${tags}</#if>" placeholder="${tagLabel}（${tagSeparatorTipLabel}）" autocomplete="off" />
                         </div>
-                        <#if domains?size != 0>
+                        <#if addArticleDomains?size != 0>
                         <div class="domains-tags">
-                            <#list domains as domain>
+                            <#list addArticleDomains as domain>
                                 <#if domain.domainTags?size gt 0>
                                     <span data-id="${domain.oId}" class="btn small<#if 0 == domain_index> current</#if>">${domain.domainTitle}</span>&nbsp;
                                 </#if>
                             </#list>
                             <div class="fn-hr5"></div>
-                            <#list domains as domain>
+                            <#list addArticleDomains as domain>
                                 <#if domain.domainTags?size gt 0>
                                 <div id="tags${domain.oId}" class="domain-tags<#if 0 != domain_index> fn-none</#if>">
                                     <#list domain.domainTags as tag>
@@ -88,6 +88,9 @@
                         </#if>
                     </div>
                     <div class="fn-clear">
+                        <#if article?? && permissions["commonRemoveArticle"].permissionGrant>
+                            <label class="ft-red fn-pointer" tabindex="11" onclick="AddArticle.remove('${csrfToken}', this)">${removeArticleLabel} &nbsp; &nbsp;</label>
+                        </#if>
                         <#if hasB3Key>
                             <label class="article-anonymous">${syncLabel}<input
                                 <#if article??> disabled="disabled"<#if article.syncWithSymphonyClient> checked</#if></#if>
@@ -101,11 +104,11 @@
 
                         <#if article??>
                             <#if permissions["commonUpdateArticle"].permissionGrant>
-                                <button class="red fn-right" tabindex="10" onclick="AddArticle.add('${csrfToken}')">${submitLabel}</button>
+                                <button class="fn-right" tabindex="10" onclick="AddArticle.add('${csrfToken}', this)">${submitLabel}</button>
                             </#if>
                         <#else>
                             <#if permissions["commonAddArticle"].permissionGrant>
-                                <button class="red fn-right" tabindex="10" onclick="AddArticle.add('${csrfToken}')">${postLabel}</button>
+                                <button class="fn-right" tabindex="10" onclick="AddArticle.add('${csrfToken}', this)">${postLabel}</button>
                             </#if>
                         </#if>
                     </div>
@@ -115,16 +118,16 @@
                             <#assign articleType=article.articleType>
                             </#if>
                             <#if 0 == articleType>
-                            <span class="icon-article"></span> ${articleLabel} 
+                                <svg><use xlink:href="#article"></use></svg> ${articleLabel}
                             <span class="ft-gray"><span class="ft-green">${addNormalArticleTipLabel}</span>
                             <#elseif 1 == articleType>
-                            <span class="icon-locked"></span> ${discussionLabel}
+                                <svg><use xlink:href="#locked"></use></svg> ${discussionLabel}
                             <span class="ft-gray">${addDiscussionArticleTipLabel}</span>
                             <#elseif 2 == articleType>
-                            <span class="icon-feed"></span> ${cityBroadcastLabel}
+                                <svg><use xlink:href="#feed"></use></svg> ${cityBroadcastLabel}
                             <span class="ft-gray">${addCityArticleTipLabel} <i>${broadcastPoint}</i> ${pointLabel}</span>
                             <#elseif 3 == articleType>
-                            <span class="icon-video"></span> ${thoughtLabel}
+                                <svg><use xlink:href="#video"></use></svg> ${thoughtLabel}
                             <span class="ft-gray">${addThoughtArticleTipLabel}
                                 <a href="https://hacpai.com/article/1441942422856" target="_blank">(?)</a></span>
                             </#if>
@@ -149,11 +152,25 @@
             Label.uploadingLabel = '${uploadingLabel}';
             Label.articleRewardPointErrorLabel = '${articleRewardPointErrorLabel}';
             Label.discussionLabel = '${discussionLabel}';
+            Label.insertEmojiLabel = '${insertEmojiLabel}';
+            Label.addBoldLabel = '${addBoldLabel}';
+            Label.addItalicLabel = '${addItalicLabel}';
+            Label.insertQuoteLabel = '${insertQuoteLabel}';
+            Label.addBulletedLabel = '${addBulletedLabel}';
+            Label.addNumberedListLabel = '${addNumberedListLabel}';
+            Label.addLinkLabel = '${addLinkLabel}';
+            Label.undoLabel = '${undoLabel}';
+            Label.redoLabel = '${redoLabel}';
+            Label.previewLabel = '${previewLabel}';
+            Label.helpLabel = '${helpLabel}';
+            Label.fullscreenLabel = '${fullscreenLabel}';
+            Label.uploadFileLabel = '${uploadFileLabel}';
             Label.qiniuDomain = '${qiniuDomain}';
             Label.qiniuUploadToken = '${qiniuUploadToken}';
             Label.commonAtUser = '${permissions["commonAtUser"].permissionGrant?c}';
             <#if article??>Label.articleOId = '${article.oId}' ;</#if>
             Label.articleType = ${articleType};
+            Label.confirmRemoveLabel = '${confirmRemoveLabel}';
         </script>
         <script src="${staticServePath}/js/add-article${miniPostfix}.js?${staticResourceVersion}"></script>
         <script>

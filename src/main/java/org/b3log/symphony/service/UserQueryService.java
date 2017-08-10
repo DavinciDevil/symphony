@@ -17,11 +17,10 @@
  */
 package org.b3log.symphony.service;
 
-import jodd.util.ArraysUtil;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.Pagination;
@@ -35,14 +34,12 @@ import org.b3log.symphony.model.*;
 import org.b3log.symphony.repository.FollowRepository;
 import org.b3log.symphony.repository.PointtransferRepository;
 import org.b3log.symphony.repository.UserRepository;
-import org.b3log.symphony.util.Markdowns;
 import org.b3log.symphony.util.Sessions;
 import org.b3log.symphony.util.Times;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -53,40 +50,46 @@ import java.util.*;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
- * @version 1.8.6.11, Feb 16, 2017
+ * @version 1.8.6.13, Apr 23, 2017
  * @since 0.2.0
  */
 @Service
 public class UserQueryService {
 
     /**
+     * Logger.
+     */
+    private static final Logger LOGGER = Logger.getLogger(UserQueryService.class);
+
+    /**
      * All usernames.
      */
     public static final List<JSONObject> USER_NAMES = Collections.synchronizedList(new ArrayList<JSONObject>());
-    /**
-     * Logger.
-     */
-    private static final Logger LOGGER = Logger.getLogger(UserQueryService.class.getName());
+
     /**
      * User repository.
      */
     @Inject
     private UserRepository userRepository;
+
     /**
      * Follow repository.
      */
     @Inject
     private FollowRepository followRepository;
+
     /**
      * Avatar query service.
      */
     @Inject
     private AvatarQueryService avatarQueryService;
+
     /**
      * Pointtransfer repository.
      */
     @Inject
     private PointtransferRepository pointtransferRepository;
+
     /**
      * Role query service.
      */
@@ -299,14 +302,11 @@ public class UserQueryService {
                 USER_NAMES.add(u);
             }
 
-            Collections.sort(USER_NAMES, new Comparator<JSONObject>() {
-                @Override
-                public int compare(final JSONObject u1, final JSONObject u2) {
-                    final String u1Name = u1.optString(UserExt.USER_T_NAME_LOWER_CASE);
-                    final String u2Name = u2.optString(UserExt.USER_T_NAME_LOWER_CASE);
+            Collections.sort(USER_NAMES, (u1, u2) -> {
+                final String u1Name = u1.optString(UserExt.USER_T_NAME_LOWER_CASE);
+                final String u2Name = u2.optString(UserExt.USER_T_NAME_LOWER_CASE);
 
-                    return u1Name.compareTo(u2Name);
-                }
+                return u1Name.compareTo(u2Name);
             });
         } catch (final RepositoryException e) {
             LOGGER.log(Level.ERROR, "Loads usernames error", e);
@@ -330,20 +330,17 @@ public class UserQueryService {
         final JSONObject nameToSearch = new JSONObject();
         nameToSearch.put(UserExt.USER_T_NAME_LOWER_CASE, namePrefix.toLowerCase());
 
-        int index = Collections.binarySearch(USER_NAMES, nameToSearch, new Comparator<JSONObject>() {
-            @Override
-            public int compare(final JSONObject u1, final JSONObject u2) {
-                String u1Name = u1.optString(UserExt.USER_T_NAME_LOWER_CASE);
-                final String inputName = u2.optString(UserExt.USER_T_NAME_LOWER_CASE);
+        int index = Collections.binarySearch(USER_NAMES, nameToSearch, (u1, u2) -> {
+            String u1Name = u1.optString(UserExt.USER_T_NAME_LOWER_CASE);
+            final String inputName = u2.optString(UserExt.USER_T_NAME_LOWER_CASE);
 
-                if (u1Name.length() < inputName.length()) {
-                    return u1Name.compareTo(inputName);
-                }
-
-                u1Name = u1Name.substring(0, inputName.length());
-
+            if (u1Name.length() < inputName.length()) {
                 return u1Name.compareTo(inputName);
             }
+
+            u1Name = u1Name.substring(0, inputName.length());
+
+            return u1Name.compareTo(inputName);
         });
 
         final List<JSONObject> ret = new ArrayList<>();
@@ -452,7 +449,6 @@ public class UserQueryService {
     /**
      * Gets user names from the specified text.
      * <p>
-     * <p>
      * A user name is between &#64; and a punctuation, a blank or a line break (\n). For example, the specified text is
      * <pre>&#64;88250 It is a nice day. &#64;Vanessa, we are on the way.</pre> There are two user names in the text,
      * 88250 and Vanessa.
@@ -460,18 +456,16 @@ public class UserQueryService {
      *
      * @param text the specified text
      * @return user names, returns an empty set if not found
-     * @throws ServiceException service exception
      */
-    public Set<String> getUserNames(final String text) throws ServiceException {
+    public Set<String> getUserNames(final String text) {
         final Set<String> ret = new HashSet<>();
-        final String mdtext = Markdowns.linkToHtml(text);
-        int idx = mdtext.indexOf('@');
+        int idx = text.indexOf('@');
 
         if (-1 == idx) {
             return ret;
         }
 
-        String copy = mdtext.trim();
+        String copy = text.trim();
         copy = copy.replaceAll("\\n", " ");
         //(?=\\pP)匹配标点符号-http://www.cnblogs.com/qixuejia/p/4211428.html
         copy = copy.replaceAll("(?=\\pP)[^@]", " ");
@@ -526,9 +520,8 @@ public class UserQueryService {
      *
      * @param name the specified name
      * @return user, returns {@code null} if not found
-     * @throws ServiceException service exception
      */
-    public JSONObject getUserByName(final String name) throws ServiceException {
+    public JSONObject getUserByName(final String name) {
         try {
             final JSONObject ret = userRepository.getByName(name);
             if (null == ret) {
@@ -546,7 +539,8 @@ public class UserQueryService {
             return ret;
         } catch (final RepositoryException e) {
             LOGGER.log(Level.ERROR, "Gets user by name[" + name + "] failed", e);
-            throw new ServiceException(e);
+
+            return null;
         }
     }
 

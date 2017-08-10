@@ -21,7 +21,7 @@
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
- * @version 1.12.16.19, Mar 27, 2017
+ * @version 1.13.17.19, Jun 1, 2017
  */
 
 /**
@@ -62,14 +62,12 @@ var ArticleChannel = {
                     $(".comments-header .article-cmt-cnt").text(cmtCount + ' ' + Label.cmtLabel);
 
                     // 新增第一条评论时到底部的锚点
-                    if ($('#comments .list > ul > li.ft-center').length === 1) {
+                    if ($('#comments .list > ul > li').length === 0) {
                         $('.comment-header > .fn-none').show();
                         // 显示预览模式 & 回到底部
                         $('.comments-header > .fn-none').show();
-                        // 移除没有评论的提示
-                        $('#comments .list > ul > li.ft-center').remove();
-                        // 显示评论大图
-                        $('#comments').next().show();
+                        // 显示评论
+                        $("#articleCommentsPanel").parent().show();
                     }
 
                     if (0 === Label.userCommentViewMode) { // tranditional view mode
@@ -90,7 +88,7 @@ var ArticleChannel = {
                     hljs.initHighlighting.called = false;
                     hljs.initHighlighting();
 
-                    // 更新回复的帖子
+                    // 更新回复的回帖
                     if (data.commentOriginalCommentId !== '') {
                         var $originalComment = $('#' + data.commentOriginalCommentId),
                                 $replyBtn = $originalComment.find('.comment-action > .ft-fade > .fn-pointer');
@@ -99,14 +97,15 @@ var ArticleChannel = {
                                     + ' ' + Label.replyLabel + ' <span class="'
                                     + $replyBtn.find('span').attr('class') + '"></span>');
 
-                            if ($replyBtn.find('span').attr('class') === "icon-chevron-up") {
-                                $replyBtn.find('span').removeClass('icon-chevron-up').addClass('icon-chevron-down');
+                            if ($replyBtn.find('svg').attr('class') === "icon-chevron-up") {
+                                $replyBtn.find('svg').removeClass('icon-chevron-up').addClass('icon-chevron-down').
+                                find('use').attr('xlink:href', '#chevron-down');
                                 $replyBtn.click();
                             }
                         } else {
                             $originalComment.find('.comment-action > .ft-fade').prepend('<span class="fn-pointer ft-smaller fn-left" onclick="Comment.showReply(\''
                                     + data.commentOriginalCommentId + '\', this, \'comment-replies\')" style="opacity: 1;"> 1 '
-                                    + Label.replyLabel + ' <span class="icon-chevron-down"></span>');
+                                    + Label.replyLabel + ' <svg class="icon-chevron-down"><use xlink:href="#chevron-down"></use></svg>');
                         }
                     }
                     break;

@@ -19,6 +19,7 @@ package org.b3log.symphony.processor;
 
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.Pagination;
 import org.b3log.latke.model.User;
@@ -44,7 +45,6 @@ import org.b3log.symphony.service.UserQueryService;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -53,20 +53,23 @@ import java.util.*;
 
 /**
  * Notification processor.
- * <p>
  * <ul>
- * <li>Displays comments of my articles (/notifications/commented), GET</li>
- * <li>Displays replies of my comments (/notifications/reply), GET</li>
- * <li>Displays at me (/notifications/at), GET</li>
- * <li>Displays following user's articles (/notifications/following-user),
- * GET</li>
+ * <li>Shows [commented] notifications (/notifications/commented), GET</li>
+ * <li>Shows [reply] notifications (/notifications/reply), GET</li>
+ * <li>Shows [at] notifications (/notifications/at), GET</li>
+ * <li>Shows [following] notifications (/notifications/following), GET</li>
+ * <li>Shows [point] notifications (/notifications/point), GET </li>
+ * <li>Shows [broadcast] notifications (/notifications/broadcast), GET</li>
+ * <li>Shows [sysAnnounce] notifications (/notifications/sys-announce), GET</li>
  * <li>Makes article/comment read (/notification/read), GET</li>
+ * <li>Gets unread count of notifications (/notification/unread/count), GET</li>
+ * <li>Makes all notifications as read (/notification/all-read), GET</li>
+ * <li>Makes the specified type notifications as read (/notification/read/{type}), GET</li>
  * </ul>
- * </p>
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @author <a href="http://vanessa.b3log.org">Liyuan Lo</a>
- * @version 1.10.1.9, Mar 12, 2017
+ * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
+ * @version 1.10.1.11, Jul 11, 2017
  * @since 0.2.5
  */
 @RequestProcessor

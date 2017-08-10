@@ -21,10 +21,25 @@ package org.b3log.symphony.model;
  * This class defines all common model relevant keys.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.58.1.12, Mar 12, 2017
+ * @version 1.62.1.12, Jul 3, 2017
  * @since 0.2.0
  */
 public final class Common {
+
+    /**
+     * Key of command.
+     */
+    public static final String CMD = "cmd";
+
+    /**
+     * Key of User-Agent.
+     */
+    public static final String USER_AGENT = "User-Agent";
+
+    /**
+     * Key of add article domains.
+     */
+    public static final String ADD_ARTICLE_DOMAINS = "addArticleDomains";
 
     /**
      * Key of data.
@@ -680,6 +695,11 @@ public final class Common {
      * Key of author URL.
      */
     public static final String AUTHOR_URL = "authorURL";
+
+    /**
+     * Key of author avatar URL.
+     */
+    public static final String AUTHOR_AVATAR_URL = "authorAvatarURL";
 
     /**
      * Key of UA.

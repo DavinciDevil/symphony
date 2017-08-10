@@ -15,13 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 /**
  * @fileoverview add-article.
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
- * @version 2.22.17.19, Mar 29, 2017
+ * @version 2.24.19.20, May 4, 2017
  */
 
 /**
@@ -32,12 +33,48 @@ var AddArticle = {
     editor: undefined,
     rewardEditor: undefined,
     /**
+     * @description 删除文章
+     * @csrfToken [string] CSRF 令牌
+     * @it [bom] 调用事件的元素
+     */
+    remove: function (csrfToken, it) {
+        if (!confirm(Label.confirmRemoveLabel)) {
+            return;
+        }
+
+        $.ajax({
+            url: Label.servePath + "/article/" + Label.articleOId + "/remove",
+            type: "POST",
+            headers: {"csrfToken": csrfToken},
+            cache: false,
+            beforeSend: function () {
+                $(it).attr("disabled", "disabled").css("opacity", "0.3");
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                $("#addArticleTip").addClass('error').html('<ul><li>' + errorThrown + '</li></ul>');
+            },
+            success: function (result, textStatus) {
+                $(it).removeAttr("disabled").css("opacity", "1");
+                if (0 === result.sc) {
+                    window.location.href = Label.servePath + "/member/" + Label.userName;
+                } else {
+                    $("#addArticleTip").addClass('error').html('<ul><li>' + result.msg + '</li></ul>');
+                }
+            },
+            complete: function () {
+                $(it).removeAttr("disabled").css("opacity", "1");
+            }
+        });
+    },
+    /**
      * @description 发布文章
      * @csrfToken [string] CSRF 令牌
+     * @it [Bom] 触发事件的元素
      */
-    add: function (csrfToken) {
-        if (Validate.goValidate({target: $('#addArticleTip'),
-            data: [{
+    add: function (csrfToken, it) {
+        if (Validate.goValidate({
+                target: $('#addArticleTip'),
+                data: [{
                     "type": "string",
                     "max": 256,
                     "msg": Label.articleTitleErrorLabel,
@@ -48,12 +85,13 @@ var AddArticle = {
                     "max": 1048576,
                     "min": 4,
                     "msg": Label.articleContentErrorLabel
-                }]})) {
+                }]
+            })) {
             // 打赏区启用后积分不能为空
             if ($('#articleRewardPoint').data('orval')
-                    && !/^\+?[1-9][0-9]*$/.test($('#articleRewardPoint').val())) {
+                && !/^\+?[1-9][0-9]*$/.test($('#articleRewardPoint').val())) {
                 $("#addArticleTip").addClass('error').html('<ul><li>'
-                        + Label.articleRewardPointErrorLabel + '</li></ul>');
+                    + Label.articleRewardPointErrorLabel + '</li></ul>');
                 return false;
             }
 
@@ -62,17 +100,17 @@ var AddArticle = {
                 articleTags += $(this).text() + ',';
             });
             var requestJSONObject = {
-                articleTitle: $("#articleTitle").val().replace(/(^\s*)|(\s*$)/g, ""),
-                articleContent: this.editor.getValue(),
-                articleTags: articleTags,
-                articleCommentable: true,
-                articleType: $("input[type='radio'][name='articleType']:checked").val(),
-                articleRewardContent: this.rewardEditor.getValue(),
-                articleRewardPoint: $("#articleRewardPoint").val().replace(/(^\s*)|(\s*$)/g, ""),
-                articleAnonymous: $('#articleAnonymous').prop('checked'),
-                syncWithSymphonyClient: $('#syncWithSymphonyClient').prop('checked')
-            },
-                    url = Label.servePath + "/article", type = "POST";
+                    articleTitle: $("#articleTitle").val().replace(/(^\s*)|(\s*$)/g, ""),
+                    articleContent: this.editor.getValue(),
+                    articleTags: articleTags,
+                    articleCommentable: true,
+                    articleType: $("input[type='radio'][name='articleType']:checked").val(),
+                    articleRewardContent: this.rewardEditor.getValue(),
+                    articleRewardPoint: $("#articleRewardPoint").val().replace(/(^\s*)|(\s*$)/g, ""),
+                    articleAnonymous: $('#articleAnonymous').prop('checked'),
+                    syncWithSymphonyClient: $('#syncWithSymphonyClient').prop('checked')
+                },
+                url = Label.servePath + "/article", type = "POST";
 
             if (3 === parseInt(requestJSONObject.articleType)) { // 如果是“思绪”
                 requestJSONObject.articleContent = JSON.parse(window.localStorage.postData).thoughtContent;
@@ -90,13 +128,13 @@ var AddArticle = {
                 cache: false,
                 data: JSON.stringify(requestJSONObject),
                 beforeSend: function () {
-                    $(".form button.red").attr("disabled", "disabled").css("opacity", "0.3");
+                    $(it).attr("disabled", "disabled").css("opacity", "0.3");
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     $("#addArticleTip").addClass('error').html('<ul><li>' + errorThrown + '</li></ul>');
                 },
                 success: function (result, textStatus) {
-                    $(".form button.red").removeAttr("disabled").css("opacity", "1");
+                    $(it).removeAttr("disabled").css("opacity", "1");
                     if (0 === result.sc) {
                         window.location.href = Label.servePath + "/article/" + result.articleId;
                         localStorage.removeItem('postData');
@@ -105,7 +143,7 @@ var AddArticle = {
                     }
                 },
                 complete: function () {
-                    $(".form button.red").removeAttr("disabled").css("opacity", "1");
+                    $(it).removeAttr("disabled").css("opacity", "1");
                 }
             });
         }
@@ -143,15 +181,15 @@ var AddArticle = {
 
         if ($.ua.device.type === 'mobile' && ($.ua.device.vendor === 'Apple' || $.ua.device.vendor === 'Nokia')) {
             AddArticle.editor = Util.initTextarea('articleContent',
-                    function (editor) {
-                        var postData = JSON.parse(localStorage.postData);
-                        postData.content = editor.getValue()
-                        localStorage.postData = JSON.stringify(postData);
-                    }
+                function (editor) {
+                    var postData = JSON.parse(localStorage.postData);
+                    postData.content = editor.getValue()
+                    localStorage.postData = JSON.stringify(postData);
+                }
             );
             $('#articleContent').before('<form id="fileUpload" method="POST" enctype="multipart/form-data"><label class="btn">'
-                    + Label.uploadLabel + '<input type="file"/></label></form>')
-                    .css('margin-top', 0);
+                + Label.uploadLabel + '<input type="file"/></label></form>')
+                .css('margin-top', 0);
         } else {
             Util.initCodeMirror();
             // 初始化文章编辑器
@@ -169,18 +207,20 @@ var AddArticle = {
                     "Alt-R": "endAudioRecord"
                 },
                 toolbar: [
+                    {name: 'emoji'},
                     {name: 'bold'},
                     {name: 'italic'},
                     {name: 'quote'},
+                    {name: 'link'},
+                    {
+                        name: 'image',
+                        html: '<div class="tooltipped tooltipped-n" aria-label="' + Label.uploadFileLabel + '" ><form id="fileUpload" method="POST" enctype="multipart/form-data"><label class="icon-upload"><svg><use xlink:href="#upload"></use></svg><input type="file"/></label></form></div>'
+                    },
                     {name: 'unordered-list'},
                     {name: 'ordered-list'},
-                    {name: 'link'},
-                    {name: 'image', html: '<form id="fileUpload" method="POST" enctype="multipart/form-data"><label class="icon-upload"><input type="file"/></label></form>'},
-                    {name: 'redo'},
-                    {name: 'undo'},
                     {name: 'view'},
-                    {name: 'question', action: 'https://hacpai.com/guide/markdown'},
-                    {name: 'fullscreen'}
+                    {name: 'fullscreen'},
+                    {name: 'question', action: 'https://hacpai.com/guide/markdown'}
                 ],
                 status: false
             });
@@ -190,7 +230,7 @@ var AddArticle = {
         }
 
         // 默认使用 preview
-        $('.editor-toolbar .icon-view:eq(0)').click();
+        $('.post-article-content .editor-toolbar .icon-view:eq(0)').parent().click();
 
         // 私信 at 默认值
         var atIdx = location.href.indexOf("at=");
@@ -252,7 +292,7 @@ var AddArticle = {
                     token = cm.getTokenAt(preCursor);
                     if (/^:\S+:$/.test(token.string)) {
                         cm.replaceRange("", CodeMirror.Pos(cursor.line, token.start),
-                                CodeMirror.Pos(cursor.line, token.end - 1));
+                            CodeMirror.Pos(cursor.line, token.end - 1));
                     }
                 }
             });
@@ -274,15 +314,15 @@ var AddArticle = {
                 }
 
                 var change = "",
-                        unitSep = String.fromCharCode(31), // Unit Separator (单元分隔符)
-                        time = (new Date()).getTime() - thoughtTime;
+                    unitSep = String.fromCharCode(31), // Unit Separator (单元分隔符)
+                    time = (new Date()).getTime() - thoughtTime;
 
                 switch (changes[0].origin) {
                     case "+delete":
                         change = String.fromCharCode(24) + unitSep + time // cancel
-                                + unitSep + changes[0].from.ch + '-' + changes[0].from.line
-                                + unitSep + changes[0].to.ch + '-' + changes[0].to.line
-                                + String.fromCharCode(30);  // Record Separator (记录分隔符)
+                            + unitSep + changes[0].from.ch + '-' + changes[0].from.line
+                            + unitSep + changes[0].to.ch + '-' + changes[0].to.line
+                            + String.fromCharCode(30);  // Record Separator (记录分隔符)
                         break;
                     case "*compose":
                     case "+input":
@@ -302,16 +342,16 @@ var AddArticle = {
                             }
                         }
                         change += unitSep + time
-                                + unitSep + changes[0].from.ch + '-' + changes[0].from.line
-                                + unitSep + changes[0].to.ch + '-' + changes[0].to.line
-                                + String.fromCharCode(30);  // Record Separator (记录分隔符)
+                            + unitSep + changes[0].from.ch + '-' + changes[0].from.line
+                            + unitSep + changes[0].to.ch + '-' + changes[0].to.line
+                            + String.fromCharCode(30);  // Record Separator (记录分隔符)
                         break;
                 }
 
                 postData.thoughtContent += change;
                 localStorage.postData = JSON.stringify(postData);
 
-                if ($('.article-content .editor-preview-active').length === 0) {
+                if ($('.post-article-content .editor-preview-active').length === 0) {
                     return false;
                 }
 
@@ -323,7 +363,7 @@ var AddArticle = {
                         markdownText: cm.getValue()
                     },
                     success: function (result, textStatus) {
-                        $('.article-content .editor-preview-active').html(result.html);
+                        $('.post-article-content .editor-preview-active').html(result.html);
                         hljs.initHighlighting.called = false;
                         hljs.initHighlighting();
                     }
@@ -383,16 +423,16 @@ var AddArticle = {
 
         if ($.ua.device.type === 'mobile' && ($.ua.device.vendor === 'Apple' || $.ua.device.vendor === 'Nokia')) {
             AddArticle.rewardEditor = Util.initTextarea('articleRewardContent',
-                  function (editor) {
-                      var postData = JSON.parse(localStorage.postData);
-                      postData.rewardContent = editor.getValue()
-                      localStorage.postData = JSON.stringify(postData);
-                  }
+                function (editor) {
+                    var postData = JSON.parse(localStorage.postData);
+                    postData.rewardContent = editor.getValue()
+                    localStorage.postData = JSON.stringify(postData);
+                }
             );
 
             $('#articleRewardContent').before('<form id="rewardFileUpload" method="POST" enctype="multipart/form-data"><label class="btn">'
-                    + Label.uploadLabel + '<input type="file"/></label></form>')
-                    .css('margin-top', 0);
+                + Label.uploadLabel + '<input type="file"/></label></form>')
+                .css('margin-top', 0);
         } else {
             var addArticleRewardEditor = new Editor({
                 element: document.getElementById('articleRewardContent'),
@@ -400,18 +440,20 @@ var AddArticle = {
                 lineWrapping: true,
                 htmlURL: Label.servePath + "/markdown",
                 toolbar: [
+                    {name: 'emoji'},
                     {name: 'bold'},
                     {name: 'italic'},
                     {name: 'quote'},
+                    {name: 'link'},
+                    {
+                        name: 'image',
+                        html: '<div class="tooltipped tooltipped-n" aria-label="' + Label.uploadFileLabel + '" ><form id="rewardFileUpload" method="POST" enctype="multipart/form-data"><label class="icon-upload"><svg><use xlink:href="#upload"></use></svg><input type="file"/></label></form></div>'
+                    },
                     {name: 'unordered-list'},
                     {name: 'ordered-list'},
-                    {name: 'link'},
-                    {name: 'image', html: '<form id="rewardFileUpload" method="POST" enctype="multipart/form-data"><label class="icon-upload"><input type="file"/></label></form>'},
-                    {name: 'redo'},
-                    {name: 'undo'},
                     {name: 'view'},
-                    {name: 'question', action: 'https://hacpai.com/guide/markdown'},
-                    {name: 'fullscreen'}
+                    {name: 'fullscreen'},
+                    {name: 'question', action: 'https://hacpai.com/guide/markdown'}
                 ],
                 extraKeys: {
                     "Alt-/": "autocompleteUserName",
@@ -435,7 +477,7 @@ var AddArticle = {
                     token = cm.getTokenAt(preCursor);
                     if (/^:\S+:$/.test(token.string)) {
                         cm.replaceRange("", CodeMirror.Pos(cursor.line, token.start),
-                                CodeMirror.Pos(cursor.line, token.end - 1));
+                            CodeMirror.Pos(cursor.line, token.end - 1));
                     }
                 }
             });
@@ -474,20 +516,20 @@ var AddArticle = {
 
         $("#articleContent").next().next().height(330);
 
-         if ("" !== postData.rewardContent) {
-             $('#showReward').click();
-             AddArticle.rewardEditor.setValue(postData.rewardContent);
-         }
+        if ("" !== postData.rewardContent) {
+            $('#showReward').click();
+            AddArticle.rewardEditor.setValue(postData.rewardContent);
+        }
 
-         if ("" !== postData.rewardPoint) {
-             $('#showReward').click();
+        if ("" !== postData.rewardPoint) {
+            $('#showReward').click();
             $('#articleRewardPoint').val(postData.rewardPoint);
-         }
-         $("#articleRewardPoint").keyup(function () {
-             var postData = JSON.parse(localStorage.postData);
-             postData.rewardPoint = $(this).val();
-             localStorage.postData = JSON.stringify(postData);
-         });
+        }
+        $("#articleRewardPoint").keyup(function () {
+            var postData = JSON.parse(localStorage.postData);
+            postData.rewardPoint = $(this).val();
+            localStorage.postData = JSON.stringify(postData);
+        });
 
     },
     /**
@@ -503,7 +545,7 @@ var AddArticle = {
                 return false;
             }
             var hasTag = false;
-            text = text.replace(/\s/g, '');
+            text = text.replace(/\s/g, '').replace(/,/g, '');
             $("#articleTags").val('');
 
             // 重复添加处理
@@ -524,12 +566,12 @@ var AddArticle = {
 
             // 长度处理
             if ($('.tags-input .tag').length >= 4) {
-                $('#articleTags').prop('disabled', true).val('').data('val', '');
+                $('#articleTags').val('').data('val', '');
                 return false;
             }
 
             $('.post .tags-selected').append('<span class="tag"><span class="text">'
-                    + text + '</span><span class="close">x</span></span>');
+                + text + '</span><span class="close">x</span></span>');
             $('#articleTags').width($('.tags-input').width() - $('.post .tags-selected').width() - 10);
 
             // set tags to localStorage
@@ -545,7 +587,7 @@ var AddArticle = {
             }
 
             if ($('.tags-input .tag').length >= 4) {
-                $('#articleTags').prop('disabled', true).val('').data('val', '');
+                $('#articleTags').val('').data('val', '');
             }
         };
 
@@ -572,7 +614,6 @@ var AddArticle = {
         $('.tags-input').on('click', '.tag > span.close', function () {
             $(this).parent().remove();
             $('#articleTags').width($('.tags-input').width() - $('.post .tags-selected').width() - 10);
-            $('#articleTags').prop('disabled', false);
 
             // set tags to localStorage
             if (location.search.indexOf('?id=') === -1) {
@@ -595,7 +636,11 @@ var AddArticle = {
             }
             $('#articleTagsSelectedPanel').hide();
         }).blur(function () {
-            $(this).val('').data('val', '');
+            if ($('#articleTagsSelectedPanel').css('display') === 'block') {
+                // 鼠标点击 completed 面板时避免把输入框的值加入到 tag 中
+                return false;
+            }
+            addTag($(this).val());
         });
 
         // 关闭领域 tag 选择面板
@@ -618,7 +663,7 @@ var AddArticle = {
                 $('.post .domains-tags').hide();
                 // 遇到分词符号自动添加标签
                 if (event.key === ',' || event.key === '，' ||
-                        event.key === '、' || event.key === '；' || event.key === ';') {
+                    event.key === '、' || event.key === '；' || event.key === ';') {
                     var text = $("#articleTags").val();
                     addTag(text.substr(0, text.length - 1));
                     return false;
@@ -632,7 +677,7 @@ var AddArticle = {
 
                 // 上下左右
                 if (event.keyCode === 37 || event.keyCode === 39 ||
-                        event.keyCode === 38 || event.keyCode === 40) {
+                    event.keyCode === 38 || event.keyCode === 40) {
                     return false;
                 }
 
@@ -644,7 +689,7 @@ var AddArticle = {
 
                 // 删除 tag
                 if (event.keyCode === 8 && event.data.settings.chinese === 8
-                        && event.data.settings.keydownVal.replace(/\s/g, '') === '') {
+                    && event.data.settings.keydownVal.replace(/\s/g, '') === '') {
                     $('.tags-input .tag .close:last').click();
                     return false;
                 }

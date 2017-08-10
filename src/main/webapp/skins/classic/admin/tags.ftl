@@ -7,6 +7,7 @@
             <input name="title" type="text" placeholder="${tagLabel}"/>
             <button type="submit" class="green">${searchLabel}</button>  &nbsp;
             <button type="button" class="btn red" onclick="window.location = '${servePath}/admin/add-tag'">${addTagLabel}</button>
+            <button type="button" class="btn red" onclick="removeUnusedTags();">${removeUnusedTagsLabel}</button>
         </form>
         <ul>
             <#list tags as item>
@@ -31,7 +32,7 @@
                         </h2>
                         ${item.tagDescription}
                     </div>
-                    <a href="${servePath}/admin/tag/${item.oId}" class="fn-right tooltipped tooltipped-w ft-a-title" aria-label="${editLabel}"><span class="icon-edit"></span></a>
+                    <a href="${servePath}/admin/tag/${item.oId}" class="fn-right tooltipped tooltipped-w ft-a-title" aria-label="${editLabel}"><svg><use xlink:href="#edit"></use></svg></a>
                 </div>
             </li>
             </#list>
@@ -39,4 +40,16 @@
         <@pagination url="${servePath}/admin/tags"/>
     </div>
 </div>
+<script>
+    function removeUnusedTags() {
+        $.ajax({
+            url: "/admin/tags/remove-unused",
+            type: "POST",
+            cache: false,
+            success: function (result, textStatus) {
+                window.location.reload();
+            }
+        });
+    }
+</script>
 </@admin>

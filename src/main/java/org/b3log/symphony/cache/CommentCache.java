@@ -17,11 +17,11 @@
  */
 package org.b3log.symphony.cache;
 
-import org.b3log.latke.ioc.inject.Named;
-import org.b3log.latke.ioc.inject.Singleton;
 import org.b3log.latke.Keys;
 import org.b3log.latke.cache.Cache;
 import org.b3log.latke.cache.CacheFactory;
+import org.b3log.latke.ioc.inject.Named;
+import org.b3log.latke.ioc.inject.Singleton;
 import org.b3log.symphony.model.Comment;
 import org.b3log.symphony.util.JSONs;
 import org.b3log.symphony.util.Symphonys;
@@ -54,7 +54,7 @@ public class CommentCache {
      * @return comment, returns {@code null} if not found
      */
     public JSONObject getComment(final String id) {
-        final JSONObject comment = (JSONObject) cache.get(id);
+        final JSONObject comment = cache.get(id);
         if (null == comment) {
             return null;
         }

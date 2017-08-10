@@ -19,6 +19,7 @@ package org.b3log.symphony.service;
 
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.User;
@@ -35,7 +36,6 @@ import org.b3log.symphony.util.Languages;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import java.util.*;
 
 /**
@@ -52,6 +52,7 @@ public class InitMgmtService {
      * Logger.
      */
     private static final Logger LOGGER = Logger.getLogger(InitMgmtService.class);
+
     private static Set<String> VISITOR_PERMISSIONS = new HashSet<>();
     private static Set<String> DEFAULT_PERMISSIONS = new HashSet<>();
     private static Set<String> MEMBER_PERMISSIONS = new HashSet<>();
@@ -61,11 +62,16 @@ public class InitMgmtService {
 
     static { // Init built-in roles' permissions, see https://github.com/b3log/symphony/issues/358 for more details
         // Visitor
+        // no permissions at present
+
+        // Default
         DEFAULT_PERMISSIONS.addAll(VISITOR_PERMISSIONS);
         DEFAULT_PERMISSIONS.add(Permission.PERMISSION_ID_C_COMMON_ADD_ARTICLE);
         DEFAULT_PERMISSIONS.add(Permission.PERMISSION_ID_C_COMMON_UPDATE_ARTICLE);
+        DEFAULT_PERMISSIONS.add(Permission.PERMISSION_ID_C_COMMON_REMOVE_ARTICLE);
         DEFAULT_PERMISSIONS.add(Permission.PERMISSION_ID_C_COMMON_ADD_COMMENT);
         DEFAULT_PERMISSIONS.add(Permission.PERMISSION_ID_C_COMMON_UPDATE_COMMENT);
+        DEFAULT_PERMISSIONS.add(Permission.PERMISSION_ID_C_COMMON_REMOVE_COMMENT);
         DEFAULT_PERMISSIONS.add(Permission.PERMISSION_ID_C_COMMON_THANK_ARTICLE);
         DEFAULT_PERMISSIONS.add(Permission.PERMISSION_ID_C_COMMON_THANK_COMMENT);
         DEFAULT_PERMISSIONS.add(Permission.PERMISSION_ID_C_COMMON_WATCH_ARTICLE);
@@ -146,41 +152,49 @@ public class InitMgmtService {
      */
     @Inject
     private PermissionRepository permissionRepository;
+
     /**
      * Role repository.
      */
     @Inject
     private RoleRepository roleRepository;
+
     /**
      * Role-permission repository.
      */
     @Inject
     private RolePermissionRepository rolePermissionRepository;
+
     /**
      * Option repository.
      */
     @Inject
     private OptionRepository optionRepository;
+
     /**
      * Tag repository.
      */
     @Inject
     private TagRepository tagRepository;
+
     /**
      * Tag management service.
      */
     @Inject
     private TagMgmtService tagMgmtService;
+
     /**
      * Article management service.
      */
     @Inject
     private ArticleMgmtService articleMgmtService;
+
     /**
      * User management service.
      */
     @Inject
     private UserMgmtService userMgmtService;
+
     /**
      * User query service.
      */
@@ -210,8 +224,8 @@ public class InitMgmtService {
 
             final List<JdbcRepositories.CreateTableResult> createTableResults = JdbcRepositories.initAllTables();
             for (final JdbcRepositories.CreateTableResult createTableResult : createTableResults) {
-                LOGGER.log(Level.INFO, "Creates table result[tableName={0}, isSuccess={1}]",
-                        new Object[]{createTableResult.getName(), createTableResult.isSuccess()});
+                LOGGER.log(Level.INFO, "Creates table result [tableName={0}, isSuccess={1}]",
+                        createTableResult.getName(), createTableResult.isSuccess());
             }
 
             final Transaction transaction = optionRepository.beginTransaction();
@@ -337,11 +351,15 @@ public class InitMgmtService {
             permissionRepository.add(permission);
             permission.put(Keys.OBJECT_ID, Permission.PERMISSION_ID_C_COMMON_UPDATE_ARTICLE);
             permissionRepository.add(permission);
+            permission.put(Keys.OBJECT_ID, Permission.PERMISSION_ID_C_COMMON_REMOVE_ARTICLE);
+            permissionRepository.add(permission);
             permission.put(Keys.OBJECT_ID, Permission.PERMISSION_ID_C_COMMON_ADD_COMMENT);
             permissionRepository.add(permission);
             permission.put(Keys.OBJECT_ID, Permission.PERMISSION_ID_C_COMMON_ADD_COMMENT_ANONYMOUS);
             permissionRepository.add(permission);
             permission.put(Keys.OBJECT_ID, Permission.PERMISSION_ID_C_COMMON_UPDATE_COMMENT);
+            permissionRepository.add(permission);
+            permission.put(Keys.OBJECT_ID, Permission.PERMISSION_ID_C_COMMON_REMOVE_COMMENT);
             permissionRepository.add(permission);
             permission.put(Keys.OBJECT_ID, Permission.PERMISSION_ID_C_COMMON_VIEW_COMMENT_HISTORY);
             permissionRepository.add(permission);

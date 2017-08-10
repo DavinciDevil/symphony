@@ -20,6 +20,7 @@ package org.b3log.symphony.service;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.Pagination;
@@ -37,23 +38,22 @@ import org.b3log.symphony.model.Domain;
 import org.b3log.symphony.model.Tag;
 import org.b3log.symphony.model.UserExt;
 import org.b3log.symphony.repository.*;
-import org.b3log.symphony.util.Markdowns;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.jsoup.Jsoup;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+
+;
 
 /**
  * Tag query service.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.8.5.12, Mar 4, 2017
+ * @version 1.8.6.13, Apr 21, 2017
  * @since 0.2.0
  */
 @Service
@@ -62,51 +62,61 @@ public class TagQueryService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(TagQueryService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(TagQueryService.class);
+
     /**
      * URL fetch service.
      */
     private final URLFetchService urlFetchService = URLFetchServiceFactory.getURLFetchService();
+
     /**
      * Tag repository.
      */
     @Inject
     private TagRepository tagRepository;
+
     /**
      * User-Tag repository.
      */
     @Inject
     private UserTagRepository userTagRepository;
+
     /**
      * Tag-Tag repository.
      */
     @Inject
     private TagTagRepository tagTagRepository;
+
     /**
      * User repository.
      */
     @Inject
     private UserRepository userRepository;
+
     /**
      * Domain repository.
      */
     @Inject
     private DomainRepository domainRepository;
+
     /**
      * Domain tag repository.
      */
     @Inject
     private DomainTagRepository domainTagRepository;
+
     /**
      * Avatar query service.
      */
     @Inject
     private AvatarQueryService avatarQueryService;
+
     /**
      * Short link query service.
      */
     @Inject
     private ShortLinkQueryService shortLinkQueryService;
+
     /**
      * Tag cache.
      */
@@ -133,20 +143,17 @@ public class TagQueryService {
 
         final List<JSONObject> tags = tagCache.getTags();
 
-        int index = Collections.binarySearch(tags, titleToSearch, new Comparator<JSONObject>() {
-            @Override
-            public int compare(final JSONObject t1, final JSONObject t2) {
-                String u1Title = t1.optString(Tag.TAG_T_TITLE_LOWER_CASE);
-                final String inputTitle = t2.optString(Tag.TAG_T_TITLE_LOWER_CASE);
+        int index = Collections.binarySearch(tags, titleToSearch, (t1, t2) -> {
+            String u1Title = t1.optString(Tag.TAG_T_TITLE_LOWER_CASE);
+            final String inputTitle = t2.optString(Tag.TAG_T_TITLE_LOWER_CASE);
 
-                if (u1Title.length() < inputTitle.length()) {
-                    return u1Title.compareTo(inputTitle);
-                }
-
-                u1Title = u1Title.substring(0, inputTitle.length());
-
+            if (u1Title.length() < inputTitle.length()) {
                 return u1Title.compareTo(inputTitle);
             }
+
+            u1Title = u1Title.substring(0, inputTitle.length());
+
+            return u1Title.compareTo(inputTitle);
         });
 
         final List<JSONObject> ret = new ArrayList<>();
@@ -171,12 +178,7 @@ public class TagQueryService {
         }
 
         final List<JSONObject> subList = tags.subList(start, end);
-        Collections.sort(subList, new Comparator<JSONObject>() {
-            @Override
-            public int compare(final JSONObject t1, final JSONObject t2) {
-                return t2.optInt(Tag.TAG_REFERENCE_CNT) - t1.optInt(Tag.TAG_REFERENCE_CNT);
-            }
-        });
+        Collections.sort(subList, (t1, t2) -> t2.optInt(Tag.TAG_REFERENCE_CNT) - t1.optInt(Tag.TAG_REFERENCE_CNT));
 
         return subList.subList(0, subList.size() > fetchSize ? fetchSize : subList.size());
     }
@@ -609,12 +611,12 @@ public class TagQueryService {
                 }
             }
 
-            final Map<String, JSONObject> tags = tagRepository.get(tagIds);
-            final Collection<JSONObject> values = tags.values();
-            ret.addAll(values);
-
-            for (final JSONObject tag : ret) {
-                Tag.fillDescription(tag);
+            for (final String tId : tagIds) {
+                final JSONObject tag = tagRepository.get(tId);
+                if (null != tag) {
+                    Tag.fillDescription(tag);
+                    ret.add(tag);
+                }
             }
 
             return ret;

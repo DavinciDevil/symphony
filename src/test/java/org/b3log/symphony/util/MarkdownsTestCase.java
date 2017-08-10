@@ -19,6 +19,9 @@ package org.b3log.symphony.util;
 
 import java.io.FileReader;
 import java.net.URL;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.testng.Assert;
 import org.apache.commons.io.IOUtils;
 import org.b3log.latke.Latkes;
@@ -29,7 +32,7 @@ import org.testng.annotations.Test;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
- * @version 2.3.1.5, Nov 27, 2016
+ * @version 2.4.1.7, May 2, 2017
  * @since 0.1.6
  */
 public class MarkdownsTestCase {
@@ -38,12 +41,53 @@ public class MarkdownsTestCase {
         Latkes.initRuntimeEnv();
     }
 
+    @Test
+    public void jsoupParse() {
+        final Document parse = Jsoup.parse("<p><strong><br>大家提提意见</strong></p>\n" +
+                "<hr>\n" +
+                "<p>一 基本情况<br> -学习和掌握  java （）年<br> -学习和掌握  javascript（）年<br> -在搭好框架的前提下，写一个中等复杂度的查添删改的时间（）小时<br> -是否有能力独立写一个自己的blog网站（），如果能需要的时间（）天<br> -英文水平（  ）<br> -业余时间的安排（           ）</p>\n" +
+                "<p>一 选择题（答案统一写在第十题下面）</p>\n" +
+                "<p>1有一段java 应用程序，它的主类名是a1，那么保存它的源文件名可以是（）<br>  A ) a1.java            B) a1.class             C) a1                    D) 都对</p>\n" +
+                "<p>2  Java中（）<br>  A) 一个子类可以有多个父类，一个父类也可以有多个子类<br>  B) 一个子类可以有多个父类，但一个父类只可以有一个子类<br>  C) 一个子类可以有一个父类，但一个父类可以有多个子类<br>  D)上述说法都不对</p>\n" +
+                "<p>3  main方法是Java应用程序执行的入口点，关于main方法的方法头以下哪项是合法的？<br>       A)public  static  void  main（）<br>      B)public  static  void   main（ String[]  args ）<br>   C)public  static int  main（String  [] arg ）<br>   D)public  void  main（String  arg[] ）</p>\n" +
+                "<p>4 在Java中，一个类可同时定义许多同名的方法，这些方法的形式参数个数、类型或顺序各不相同，传回的值也可以不相同。这种面向对象程序的特性称为（ ）<br>A)隐藏              B)覆盖               C)重载         D)Java不支持此特性</p>\n" +
+                "<p>5  A派生出子类B，B派生出子类C，并且在Java源代码中有如下声明： </p>\n" +
+                "<pre><code>1.    A  a0=new  A(); \n" +
+                "</code></pre><ol>\n" +
+                "<li>A  a1 =new  B(); </li>\n" +
+                "<li>A  a2=new  C();<br>问以下哪个说法是正确的？ （      ）<br>A)只有第1行能通过编译<br>B)第1、2行能通过编译，但第3行编译出错<br>C)第1、2、3行能通过编译，但第2、3行运行时出错<br>D)第1行、第2行和第3行的声明都是正确的 </li>\n" +
+                "</ol>\n" +
+                "<p>6 关于以下程序段，正确的说法是（ ）<br>     1．  String  s1=“a”+“b”;<br>    2．   String  s2=new  String（s1）；<br>3．    if（s1= =s2）<br>4．       System.out.println(“= =  is succeeded”);<br>5．     if (s1.equals(s2))<br>6．        System.out.println(“.equals() is succeeded”);<br>A)行4与行6都将执行<br>B)行4执行，行6不执行<br>C)行6执行，行4不执行<br> D)行4、行6都不执行 </p>\n" +
+                "<p>7 设计用户表时，身份证号为固定18位长，对该字段最好采用（）数据类型</p>\n" +
+                "<p>A)int B) char C) varchar D)text </p>\n" +
+                "<p>8为了加快对某表查询的速度，应对此表建立（）。<br>     A.)约束 B)存储过程 C) 规则 D) 索引</p>\n" +
+                "<p>9 在HTML页面上编写Javascript代码时，应编写在（）标签中间。<br>   A)<javascript>和</javascript><br>   B)<script>和</script><br>   C) <head>和</head><br>   D) <body </body></p>\n" +
+                "<p>10 以下（）选项不能够正确地得到这个标签：</p>\n" +
+                "<p><input id=\"btnGo\" type=\"button\" value=\"单击我\" class=\"btn\"/><br>A)  $(&quot;#btnGo&quot;)<br>B)   $(&quot;.btnGo&quot;)<br>C)  $(&quot;.btn&quot;)<br>    D)  $(&quot;input[type=&#39;button&#39;]&quot;)</p>\n" +
+                "<p>统一写出选择题答案：</p>\n" +
+                "<p>二 问答题<br>-简述Java中接口和抽象类的区别</p>\n" +
+                "<p>-简述java的集合对象list，Map,Set, Queue的特点</p>\n" +
+                "<p>-用一句话简述下列框架的作用<br>Spring:<br>springmvc（struts2):<br>Hibernate（mybatis):<br>Jquery:<br>Bootstrap：</p>\n" +
+                "<p>-简述Javascript中的对象是什么，怎么创建一个对象的实例（简单代码）</p>\n" +
+                "<p>-简述下列sql关键字的作用<br>Select * from Table:<br>Where :<br>Having:<br>Group by:<br>Order by:</p>\n" +
+                "<p>三 知识面题<br>写出你学习过或者了解过的相关扩展知识。<br>-学习或者了解过的其他编程语言：</p>\n" +
+                "<p>-学习或者了解过java其他框架(除去SSH)：</p>\n" +
+                "<p>-学习或者了解过相关数据库：</p>\n" +
+                "<p>-游览过或者知道的任何技术网站:</p>\n" +
+                "<p>-其他你知道的新奇技术：</p>\n" +
+                "<hr>\n");
+
+        final String html = parse.html();
+        System.out.println(html);
+        Assert.assertTrue(html.contains("<body < body>")); // Jsoup bug
+    }
+
     /**
      * Tag test.
      */
     @Test
     public void tag() {
-        if (!Markdowns.MARKED_AVAILABLE) {
+        if (Markdowns.MARKED_AVAILABLE) {
             final String kbd = "<kbd>DV</kbd>";
 
             String html = Markdowns.toHTML(kbd);
@@ -58,7 +102,7 @@ public class MarkdownsTestCase {
      */
     @Test
     public void clean() {
-        if (!Markdowns.MARKED_AVAILABLE) {
+        if (Markdowns.MARKED_AVAILABLE) {
             final String md = "<a href='data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4K'>a link</a>";
 
             final String html = Markdowns.toHTML(md);
@@ -73,7 +117,7 @@ public class MarkdownsTestCase {
      */
     @Test
     public void space() {
-        if (!Markdowns.MARKED_AVAILABLE) {
+        if (Markdowns.MARKED_AVAILABLE) {
             final String md = "Sym是一个用Java写的实时论坛，欢迎来[体验Sym](https://hacpai.com)！";
             final String html = Markdowns.toHTML(md);
 
@@ -86,11 +130,11 @@ public class MarkdownsTestCase {
      */
     @Test
     public void linkToHTML() {
-        if (!Markdowns.MARKED_AVAILABLE) {
+        if (Markdowns.MARKED_AVAILABLE) {
             String md = "test@test.com";
-            String html = Markdowns.linkToHtml(md);
+            String html = Markdowns.toHTML(md);
 
-            Assert.assertEquals(html, "<p><a href=\"mailto:&#116;e&#115;&#x74;&#x40;&#x74;&#x65;&#115;&#x74;&#x2e;c&#111;&#x6d;\">&#116;e&#115;&#x74;&#x40;&#x74;&#x65;&#115;&#x74;&#x2e;c&#111;&#x6d;</a></p>");
+            Assert.assertEquals(html, "<p>test@test.com</p>");
         }
     }
 
@@ -99,7 +143,7 @@ public class MarkdownsTestCase {
      */
     @Test
     public void toHTML1() {
-        if (!Markdowns.MARKED_AVAILABLE) {
+        if (Markdowns.MARKED_AVAILABLE) {
             String md = "Sym**是一个用 _Java_ 写的实时论坛**";
             String html = Markdowns.toHTML(md);
             Assert.assertEquals(html, "<p>Sym<strong>是一个用 <em>Java</em> 写的实时论坛</strong></p>");
@@ -127,7 +171,7 @@ public class MarkdownsTestCase {
                     + "}\n"
                     + "```";
             html = Markdowns.toHTML(md);
-            Assert.assertEquals(html, "<p><pre><code>server {\n"
+            Assert.assertEquals(html, "<p></p><pre><code>server {\n"
                     + "    listen       443 ssl;\n"
                     + "    server_name  usb.dev;\n"
                     + "\n"
@@ -143,12 +187,12 @@ public class MarkdownsTestCase {
                     + "        proxy_pass http://backend$request_uri;\n"
                     + "    }\n"
                     + "}\n"
-                    + "</code></pre></p>");
+                    + "</code></pre><p></p>");
 
-            md = "然后新建一个study[downline]1文件夹，在文件夹下面新建一个index.html文件,*注意最后一个js代码的type*\n"
-                    + "github地址：https://github.com/Userwu/study[downline]react";
+            md = "然后新建一个study_1文件夹，在文件夹下面新建一个index.html文件,*注意最后一个js代码的type*\n"
+                    + "github地址：https://github.com/Userwu/study_react";
             html = Markdowns.toHTML(md);
-            Assert.assertEquals(html, "<p>然后新建一个 study_1 文件夹，在文件夹下面新建一个 index.html 文件,*注意最后一个 js 代码的 type*<br/>github 地址：https://github.com/Userwu/study_react</p>");
+            Assert.assertEquals(html, "<p>然后新建一个 study_1 文件夹，在文件夹下面新建一个 index.html 文件,<em>注意最后一个 js 代码的 type</em><br>github 地址：<a href=\"https://github.com/Userwu/study_react\">https://github.com/Userwu/study_react</a></p>");
         }
     }
 
@@ -157,7 +201,7 @@ public class MarkdownsTestCase {
      */
     @Test
     public void toHTML() {
-        if (!Markdowns.MARKED_AVAILABLE) {
+        if (Markdowns.MARKED_AVAILABLE) {
             String md = "[b3log](http://b3log.org)";
             String html = Markdowns.toHTML(md);
             Assert.assertTrue(html.contains("href"));
@@ -175,140 +219,12 @@ public class MarkdownsTestCase {
      */
     @Test
     public void toHtml0() throws Exception {
-        if (!Markdowns.MARKED_AVAILABLE) {
+        if (Markdowns.MARKED_AVAILABLE) {
             final URL mdResource = MarkdownsTestCase.class.getResource("/markdown_syntax.text");
             final String md = IOUtils.toString(new FileReader(mdResource.getPath()));
             final String html = Markdowns.toHTML(md);
 
             //System.out.println(html);
-        }
-    }
-
-    @Test
-    public void timeout() throws Exception {
-        if (!Markdowns.MARKED_AVAILABLE) {
-            final String md = "win8和win8.1以及win10自带虚拟机，无需再装第三方虚拟机软件。\n"
-                    + "首先需要在“启用或关闭windows功能”中，启用Hyper-V\n"
-                    + "\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402ua2qsv4foss.png\" >\n"
-                    + "\n"
-                    + "\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402leky0gnpyza.png\" >\n"
-                    + "\n"
-                    + "\n"
-                    + "启用之后，需要重启计算机才可以继续进行下面的步骤。\n"
-                    + "\n"
-                    + "<h2>方法/步骤</h2>\n"
-                    + "<ol>\n"
-                    + "<li>首先打开虚拟主机软件如图，然后新建一个虚拟主机；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402jwahqmr1rg1.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>根据步骤输入一个名称，方便日后管理区分；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402jmajjtwyvoi.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>选择第一代技术，不知道为什么安装linux系统选择第二个总是有问题；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402rkbfp51zxcj.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>控制内存大小不要超过自己的本机大小，根据装的系统来判断，本机16G内存，这里分配3G给Linux；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402t0mx3km3bv4.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>网络可以先不连接，之后再配置；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402u0cakutnz0v.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>创建一个虚拟硬盘，这里要注意尽量不要选择C盘，因为分区装系统后是要占用空间的；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理20160704021wpoivvwli3.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>在虚拟光驱这里需要选择加载光驱操作，如图。也可以选择“以后安装操作系统”，稍后会加以说明如何在空的虚拟机中安装系统；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402foh1yrmfxua.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>如果已经下载好了镜像，可以选择要安装的镜像，一般来说都是iso结尾的文件；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理20160704025fxnln0ad25.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>这样我们就建好了一个虚拟机需要完成保存操作。这里是以后要安装的系统的截图；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402mca11kqggac.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>从操作系统那一项可以判断是以后安装还是已经选择了系统镜像；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402ofdupqzsj0o.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>当我们回到列表就可以看到我们之前建设过的虚拟主机了，刚才建设的也在里面；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402yhhpdytkdpe.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>右键连接并开启主机后我们就能进入系统的安装界面了。后面的系统安装跟实体机无多大区别，这里只说一下之前选择“以后安装系统”的现在该如何安装系统。点击“媒体”-“DVD驱动器”-“插入磁盘”-选择要安装系统镜像（*.iso）- 点击虚拟机的黑色界面-回车。之后就可以进入系统安装界面了；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402fqdwoyuzo1o.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>系统安装完成之后就可以配置网络连接了。在Hyper-V管理器界面选择“虚拟交换机管理器”；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402hqmanm2xa41.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>选择创建外部虚拟机；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402zydduridgf4.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>给网络起个名称，其他选择默认即可；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理20160704025gxsrnlpf4k.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>出现弹出提示，选择“是”；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402nzfe4lzxhpy.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>回到Hyper-V管理器界面，对需要联网的虚拟机系统进行设置；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402zphsuihbr3q.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>选择创建好的虚拟网络交换机；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402fqj54nbeful.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "<li>打开安装好系统的虚拟机，开启网络连接即可；\n"
-                    + "\n"
-                    + "<img src=\"https://img.imspm.com/imspm.com超级产品经理2016070402kjxqg0tdfrh.png\" >\n"
-                    + "\n"
-                    + "</li>\n"
-                    + "</ol>\n"
-                    + "<h2>可以参考的资料</h2>\n"
-                    + "<ul>\n"
-                    + "<li><a href=\"http://jingyan.baidu.com/article/9c69d48f46ae6e13c9024eba.html\">Hyper-V如何安装</a>\n"
-                    + "</li>\n"
-                    + "<li><a href=\"http://baike.baidu.com%20/link?url=NYJX2s7VqK2H5H5U2vX6LmXw11ab1-2I8hG7Kk5TrfScGD-zSQnOPebhzmqc_FtX65DQDeP7nJppuzOuwJGbMa\">更多关于 hyper-v 百度百科</a>\n"
-                    + "</li>\n"
-                    + "</ul>";
-
-            final String html = Markdowns.toHTML(md);
-
-            Assert.assertEquals(html, "Content render failed, please <a href=\"https://hacpai.com/article/1438049659432\">report</a> this problem to help us enhance it, thank you &hearts;");
         }
     }
 }

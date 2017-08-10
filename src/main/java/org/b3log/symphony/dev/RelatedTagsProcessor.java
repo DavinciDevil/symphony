@@ -17,14 +17,9 @@
  */
 package org.b3log.symphony.dev;
 
-import java.io.IOException;
-import java.util.List;
-import org.b3log.latke.ioc.inject.Inject;;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
-import org.b3log.latke.RuntimeMode;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.repository.Query;
@@ -40,11 +35,16 @@ import org.b3log.symphony.repository.TagTagRepository;
 import org.b3log.symphony.service.TagMgmtService;
 import org.json.JSONObject;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+
 /**
  * Generates tag-tag relations.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.0.0.0, May 31, 2015
+ * @version 1.0.0.1, Jul 7, 2017
  * @since 1.3.0
  */
 @RequestProcessor
@@ -53,7 +53,7 @@ public class RelatedTagsProcessor {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(RelatedTagsProcessor.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(RelatedTagsProcessor.class);
 
     /**
      * Tag-Tag repository.
@@ -82,15 +82,15 @@ public class RelatedTagsProcessor {
     /**
      * Generates tag-tag relations by existing articles.
      *
-     * @param context the specified context
-     * @param request the specified request
+     * @param context  the specified context
+     * @param request  the specified request
      * @param response the specified response
      * @throws IOException io exception
      */
     @RequestProcessing(value = "/dev/tag-tag/gen", method = HTTPRequestMethod.GET)
     public void genTagRelations(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
             throws IOException {
-        if (RuntimeMode.PRODUCTION == Latkes.getRuntimeMode()) {
+        if (Latkes.RuntimeMode.PRODUCTION == Latkes.getRuntimeMode()) {
             return;
         }
 

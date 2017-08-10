@@ -17,9 +17,7 @@
  */
 package org.b3log.symphony.processor;
 
-import org.b3log.latke.ioc.inject.Inject;;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.servlet.HTTPRequestContext;
 import org.b3log.latke.servlet.HTTPRequestMethod;
@@ -31,6 +29,9 @@ import org.b3log.symphony.processor.advice.stopwatch.StopwatchEndAdvice;
 import org.b3log.symphony.processor.advice.stopwatch.StopwatchStartAdvice;
 import org.b3log.symphony.service.MailMgmtService;
 import org.b3log.symphony.util.Symphonys;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * Mail processor.
@@ -45,7 +46,7 @@ public class MailProcessor {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(MailProcessor.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(MailProcessor.class);
 
     /**
      * Mail management service.
@@ -56,9 +57,9 @@ public class MailProcessor {
     /**
      * Sends weekly newsletter..
      *
-     * @param request the specified HTTP servlet request
+     * @param request  the specified HTTP servlet request
      * @param response the specified HTTP servlet response
-     * @param context the specified HTTP request context
+     * @param context  the specified HTTP request context
      * @throws Exception exception
      */
     @RequestProcessing(value = "/cron/mail/weekly", method = HTTPRequestMethod.GET)

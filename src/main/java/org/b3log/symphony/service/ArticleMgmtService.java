@@ -23,6 +23,7 @@ import org.b3log.latke.Keys;
 import org.b3log.latke.event.Event;
 import org.b3log.latke.event.EventException;
 import org.b3log.latke.event.EventManager;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.User;
@@ -32,22 +33,16 @@ import org.b3log.latke.repository.jdbc.JdbcRepository;
 import org.b3log.latke.service.LangPropsService;
 import org.b3log.latke.service.ServiceException;
 import org.b3log.latke.service.annotation.Service;
-import org.b3log.latke.thread.ThreadService;
-import org.b3log.latke.thread.ThreadServiceFactory;
 import org.b3log.latke.util.Ids;
 import org.b3log.symphony.event.EventTypes;
 import org.b3log.symphony.model.*;
 import org.b3log.symphony.repository.*;
-import org.b3log.symphony.util.Emotions;
-import org.b3log.symphony.util.Pangu;
-import org.b3log.symphony.util.Runes;
-import org.b3log.symphony.util.Symphonys;
+import org.b3log.symphony.util.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.*;
@@ -57,7 +52,7 @@ import java.util.*;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
- * @version 2.16.32.40, Mar 26, 2017
+ * @version 2.17.35.44, Aug 4, 2017
  * @since 0.2.0
  */
 @Service
@@ -66,91 +61,109 @@ public class ArticleMgmtService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(ArticleMgmtService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ArticleMgmtService.class);
+
     /**
      * Tag max count.
      */
     private static final int TAG_MAX_CNT = 4;
+
     /**
      * Comment repository.
      */
     @Inject
     private CommentRepository commentRepository;
+
     /**
      * Article repository.
      */
     @Inject
     private ArticleRepository articleRepository;
+
     /**
      * Tag repository.
      */
     @Inject
     private TagRepository tagRepository;
+
     /**
      * Tag-Article repository.
      */
     @Inject
     private TagArticleRepository tagArticleRepository;
+
     /**
      * User repository.
      */
     @Inject
     private UserRepository userRepository;
+
     /**
      * User-Tag repository.
      */
     @Inject
     private UserTagRepository userTagRepository;
+
     /**
      * Option repository.
      */
     @Inject
     private OptionRepository optionRepository;
+
     /**
      * Notification repository.
      */
     @Inject
     private NotificationRepository notificationRepository;
+
     /**
      * Revision repository.
      */
     @Inject
     private RevisionRepository revisionRepository;
+
     /**
      * Tag management service.
      */
     @Inject
     private TagMgmtService tagMgmtService;
+
     /**
      * Event manager.
      */
     @Inject
     private EventManager eventManager;
+
     /**
      * Language service.
      */
     @Inject
     private LangPropsService langPropsService;
+
     /**
      * Pointtransfer management service.
      */
     @Inject
     private PointtransferMgmtService pointtransferMgmtService;
+
     /**
      * Reward management service.
      */
     @Inject
     private RewardMgmtService rewardMgmtService;
+
     /**
      * Reward query service.
      */
     @Inject
     private RewardQueryService rewardQueryService;
+
     /**
      * Follow query service.
      */
     @Inject
     private FollowQueryService followQueryService;
+
     /**
      * Tag query service.
      */
@@ -161,11 +174,13 @@ public class ArticleMgmtService {
      */
     @Inject
     private NotificationMgmtService notificationMgmtService;
+
     /**
      * Liveness management service.
      */
     @Inject
     private LivenessMgmtService livenessMgmtService;
+
     /**
      * Search management service.
      */
@@ -197,29 +212,89 @@ public class ArticleMgmtService {
     }
 
     /**
+     * Removes an article specified with the given article id. An article is removable if:
+     * <ul>
+     * <li>No comments</li>
+     * <li>No watches, collects, ups, downs</li>
+     * <li>No rewards</li>
+     * <li>No thanks</li>
+     * </ul>
+     * Sees https://github.com/b3log/symphony/issues/450 for more details.
+     *
+     * @param articleId the given article id
+     * @throws ServiceException service exception
+     */
+    public void removeArticle(final String articleId) throws ServiceException {
+        JSONObject article = null;
+
+        try {
+            article = articleRepository.get(articleId);
+        } catch (final Exception e) {
+            LOGGER.log(Level.ERROR, "Gets article [id=" + articleId + "] failed", e);
+        }
+
+        if (null == article) {
+            return;
+        }
+
+        final int commentCnt = article.optInt(Article.ARTICLE_COMMENT_CNT);
+        if (commentCnt > 0) {
+            throw new ServiceException(langPropsService.get("removeArticleFoundCmtLabel"));
+        }
+
+        final int watchCnt = article.optInt(Article.ARTICLE_WATCH_CNT);
+        final int collectCnt = article.optInt(Article.ARTICLE_COLLECT_CNT);
+        final int ups = article.optInt(Article.ARTICLE_GOOD_CNT);
+        final int downs = article.optInt(Article.ARTICLE_BAD_CNT);
+        if (watchCnt > 0 || collectCnt > 0 || ups > 0 || downs > 0) {
+            throw new ServiceException("removeArticleFoundWatchEtcLabel");
+        }
+
+        final int rewardCnt = (int) rewardQueryService.rewardedCount(articleId, Reward.TYPE_C_ARTICLE);
+        if (rewardCnt > 0) {
+            throw new ServiceException("removeArticleFoundRewardLabel");
+        }
+
+        final int thankCnt = (int) rewardQueryService.rewardedCount(articleId, Reward.TYPE_C_THANK_ARTICLE);
+        if (thankCnt > 0) {
+            throw new ServiceException("removeArticleFoundThankLabel");
+        }
+
+        // Perform removal
+        removeArticleByAdmin(articleId);
+    }
+
+    /**
      * Generates article's audio.
      *
      * @param article the specified article
      * @param userId  the specified user id
      */
     public void genArticleAudio(final JSONObject article, final String userId) {
-        if (Article.ARTICLE_TYPE_C_THOUGHT == article.optInt(Article.ARTICLE_TYPE)) {
+        if (Article.ARTICLE_TYPE_C_THOUGHT == article.optInt(Article.ARTICLE_TYPE)
+                || Article.ARTICLE_TYPE_C_DISCUSSION == article.optInt(Article.ARTICLE_TYPE)
+                || Article.ARTICLE_TYPE_C_BOOK == article.optInt(Article.ARTICLE_TYPE)) {
+            return;
+        }
+
+        final String tags = article.optString(Article.ARTICLE_TAGS);
+        if (StringUtils.containsIgnoreCase(tags, Tag.TAG_TITLE_C_SANDBOX)) {
             return;
         }
 
         final String articleId = article.optString(Keys.OBJECT_ID);
         String previewContent = article.optString(Article.ARTICLE_CONTENT);
+        previewContent = Markdowns.toHTML(previewContent);
         previewContent = Emotions.clear(Jsoup.parse(previewContent).text());
         previewContent = StringUtils.substring(previewContent, 0, 512);
         final String contentToTTS = previewContent;
 
-        final ThreadService threadService = ThreadServiceFactory.getThreadService();
-        threadService.submit(() -> {
+        new Thread(() -> {
             final Transaction transaction = articleRepository.beginTransaction();
 
             String audioURL = "";
             if (StringUtils.length(contentToTTS) < 96 || Runes.getChinesePercent(contentToTTS) < 40) {
-                LOGGER.debug("Content is too short to TTS [contentToTTS=" + contentToTTS + "]");
+                LOGGER.trace("Content is too short to TTS [contentToTTS=" + contentToTTS + "]");
             } else {
                 audioURL = audioMgmtService.tts(contentToTTS, Article.ARTICLE, articleId, userId);
             }
@@ -245,21 +320,32 @@ public class ArticleMgmtService {
             }
 
             JdbcRepository.dispose();
-        }, 1000 * 30);
+        }).start();
     }
 
     /**
-     * Removes an article specified with the given article id.
+     * Removes an article specified with the given article id. Calls this method will remove all existed data related
+     * with the specified article forcibly.
      *
      * @param articleId the given article id
      */
     @Transactional
-    public void removeArticle(final String articleId) {
+    public void removeArticleByAdmin(final String articleId) {
         try {
             final JSONObject article = articleRepository.get(articleId);
-
             if (null == article) {
                 return;
+            }
+
+            Query query = new Query().setFilter(new PropertyFilter(
+                    Comment.COMMENT_ON_ARTICLE_ID, FilterOperator.EQUAL, articleId)).setPageCount(1);
+            final JSONArray comments = commentRepository.get(query).optJSONArray(Keys.RESULTS);
+            final int commentCnt = comments.length();
+            for (int i = 0; i < commentCnt; i++) {
+                final JSONObject comment = comments.optJSONObject(i);
+                final String commentId = comment.optString(Keys.OBJECT_ID);
+
+                commentRepository.removeComment(commentId);
             }
 
             final String authorId = article.optString(Article.ARTICLE_AUTHOR_ID);
@@ -271,8 +357,7 @@ public class ArticleMgmtService {
             final String cityStatId = city + "-ArticleCount";
             final JSONObject cityArticleCntOption = optionRepository.get(cityStatId);
             if (null != cityArticleCntOption) {
-                cityArticleCntOption.put(Option.OPTION_VALUE,
-                        cityArticleCntOption.optInt(Option.OPTION_VALUE) - 1);
+                cityArticleCntOption.put(Option.OPTION_VALUE, cityArticleCntOption.optInt(Option.OPTION_VALUE) - 1);
                 optionRepository.update(cityStatId, cityArticleCntOption);
             }
 
@@ -281,6 +366,17 @@ public class ArticleMgmtService {
             optionRepository.update(Option.ID_C_STATISTIC_ARTICLE_COUNT, articleCntOption);
 
             articleRepository.remove(articleId);
+
+            // Remove article revisions
+            query = new Query().setFilter(CompositeFilterOperator.and(
+                    new PropertyFilter(Revision.REVISION_DATA_ID, FilterOperator.EQUAL, articleId),
+                    new PropertyFilter(Revision.REVISION_DATA_TYPE, FilterOperator.EQUAL, Revision.DATA_TYPE_C_ARTICLE)
+            ));
+            final JSONArray articleRevisions = revisionRepository.get(query).optJSONArray(Keys.RESULTS);
+            for (int i = 0; i < articleRevisions.length(); i++) {
+                final JSONObject articleRevision = articleRevisions.optJSONObject(i);
+                revisionRepository.remove(articleRevision.optString(Keys.OBJECT_ID));
+            }
 
             final List<JSONObject> tagArticleRels = tagArticleRepository.getByArticleId(articleId);
             for (final JSONObject tagArticleRel : tagArticleRels) {
@@ -295,30 +391,7 @@ public class ArticleMgmtService {
             }
 
             tagArticleRepository.removeByArticleId(articleId);
-
             notificationRepository.removeByDataId(articleId);
-
-            final Query query = new Query().setFilter(new PropertyFilter(
-                    Comment.COMMENT_ON_ARTICLE_ID, FilterOperator.EQUAL, articleId)).setPageCount(1);
-            final JSONArray comments = commentRepository.get(query).optJSONArray(Keys.RESULTS);
-            final int commentCnt = comments.length();
-            for (int i = 0; i < commentCnt; i++) {
-                final JSONObject comment = comments.optJSONObject(i);
-                final String commentId = comment.optString(Keys.OBJECT_ID);
-
-                final String commentAuthorId = comment.optString(Comment.COMMENT_AUTHOR_ID);
-                final JSONObject commenter = userRepository.get(commentAuthorId);
-                commenter.put(UserExt.USER_COMMENT_COUNT, commenter.optInt(UserExt.USER_COMMENT_COUNT) - 1);
-                userRepository.update(commentAuthorId, commenter);
-
-                commentRepository.remove(commentId);
-
-                notificationRepository.removeByDataId(commentId);
-            }
-
-            final JSONObject commentCntOption = optionRepository.get(Option.ID_C_STATISTIC_CMT_COUNT);
-            commentCntOption.put(Option.OPTION_VALUE, commentCntOption.optInt(Option.OPTION_VALUE) - commentCnt);
-            optionRepository.update(Option.ID_C_STATISTIC_CMT_COUNT, commentCntOption);
 
             if (Symphonys.getBoolean("algolia.enabled")) {
                 searchMgmtService.removeAlgoliaDocument(article);
@@ -351,7 +424,6 @@ public class ArticleMgmtService {
 
                     final int viewCnt = article.optInt(Article.ARTICLE_VIEW_CNT);
                     article.put(Article.ARTICLE_VIEW_CNT, viewCnt + 1);
-
                     article.put(Article.ARTICLE_RANDOM_DOUBLE, Math.random());
 
                     articleRepository.update(articleId, article);
@@ -622,9 +694,11 @@ public class ArticleMgmtService {
                 // Revision
                 final JSONObject revision = new JSONObject();
                 revision.put(Revision.REVISION_AUTHOR_ID, authorId);
+
                 final JSONObject revisionData = new JSONObject();
                 revisionData.put(Article.ARTICLE_TITLE, articleTitle);
                 revisionData.put(Article.ARTICLE_CONTENT, articleContent);
+
                 revision.put(Revision.REVISION_DATA, revisionData.toString());
                 revision.put(Revision.REVISION_DATA_ID, articleId);
                 revision.put(Revision.REVISION_DATA_TYPE, Revision.DATA_TYPE_C_ARTICLE);
@@ -785,6 +859,7 @@ public class ArticleMgmtService {
             articleTitle = Emotions.toAliases(articleTitle);
             articleTitle = Pangu.spacingText(articleTitle);
 
+            final String oldTitle = oldArticle.optString(Article.ARTICLE_TITLE);
             oldArticle.put(Article.ARTICLE_TITLE, articleTitle);
 
             oldArticle.put(Article.ARTICLE_TAGS, requestJSONObject.optString(Article.ARTICLE_TAGS));
@@ -796,6 +871,8 @@ public class ArticleMgmtService {
             //articleContent = StringUtils.trim(articleContent) + " "; https://github.com/b3log/symphony/issues/389
             articleContent = articleContent.replace(langPropsService.get("uploadingLabel", Locale.SIMPLIFIED_CHINESE), "");
             articleContent = articleContent.replace(langPropsService.get("uploadingLabel", Locale.US), "");
+
+            final String oldContent = oldArticle.optString(Article.ARTICLE_CONTENT);
             oldArticle.put(Article.ARTICLE_CONTENT, articleContent);
 
             final long currentTimeMillis = System.currentTimeMillis();
@@ -827,13 +904,16 @@ public class ArticleMgmtService {
 
             articleRepository.update(articleId, oldArticle);
 
-            if (Article.ARTICLE_TYPE_C_THOUGHT != articleType) {
+            if (Article.ARTICLE_TYPE_C_THOUGHT != articleType
+                    && (!oldContent.equals(articleContent) || !oldTitle.equals(articleTitle))) {
                 // Revision
                 final JSONObject revision = new JSONObject();
                 revision.put(Revision.REVISION_AUTHOR_ID, authorId);
+
                 final JSONObject revisionData = new JSONObject();
                 revisionData.put(Article.ARTICLE_TITLE, articleTitle);
                 revisionData.put(Article.ARTICLE_CONTENT, articleContent);
+
                 revision.put(Revision.REVISION_DATA, revisionData.toString());
                 revision.put(Revision.REVISION_DATA_ID, articleId);
                 revision.put(Revision.REVISION_DATA_TYPE, Revision.DATA_TYPE_C_ARTICLE);
@@ -1389,6 +1469,7 @@ public class ArticleMgmtService {
 
         if (0 != tagIdsDropped.length) {
             removeTagArticleRelations(oldArticleId, tagIdsDropped);
+            removeUserTagRelations(oldArticle.optString(Article.ARTICLE_AUTHOR_ID), Tag.TAG_TYPE_C_ARTICLE, tagIdsDropped);
         }
 
         tagStrings = new String[tagsNeedToAdd.size()];
@@ -1434,6 +1515,20 @@ public class ArticleMgmtService {
     }
 
     /**
+     * Removes User-Tag relations by the specified user id, type and tag ids of the relations to be removed.
+     *
+     * @param userId the specified article id
+     * @param type   the specified type
+     * @param tagIds the specified tag ids of the relations to be removed
+     * @throws RepositoryException repository exception
+     */
+    private void removeUserTagRelations(final String userId, final int type, final String... tagIds) throws RepositoryException {
+        for (final String tagId : tagIds) {
+            userTagRepository.removeByUserIdAndTagId(userId, tagId, type);
+        }
+    }
+
+    /**
      * Tags the specified article with the specified tag titles.
      *
      * @param tagTitles the specified (new) tag titles
@@ -1452,8 +1547,8 @@ public class ArticleMgmtService {
             int userTagType;
             final int articleCmtCnt = article.optInt(Article.ARTICLE_COMMENT_CNT);
             if (null == tag) {
-                LOGGER.log(Level.TRACE, "Found a new tag[title={0}] in article[title={1}]",
-                        new Object[]{tagTitle, article.optString(Article.ARTICLE_TITLE)});
+                LOGGER.log(Level.TRACE, "Found a new tag [title={0}] in article [title={1}]",
+                        tagTitle, article.optString(Article.ARTICLE_TITLE));
                 tag = new JSONObject();
                 tag.put(Tag.TAG_TITLE, tagTitle);
                 String tagURI = tagTitle;
@@ -1517,6 +1612,7 @@ public class ArticleMgmtService {
 
                 userTagType = Tag.TAG_TYPE_C_ARTICLE;
             }
+
             // Tag-Article relation
             final JSONObject tagArticleRelation = new JSONObject();
             tagArticleRelation.put(Tag.TAG + "_" + Keys.OBJECT_ID, tagId);
@@ -1525,15 +1621,21 @@ public class ArticleMgmtService {
             tagArticleRelation.put(Article.ARTICLE_COMMENT_CNT, article.optInt(Article.ARTICLE_COMMENT_CNT));
             tagArticleRelation.put(Article.REDDIT_SCORE, article.optDouble(Article.REDDIT_SCORE, 0D));
             tagArticleRelation.put(Article.ARTICLE_PERFECT, article.optInt(Article.ARTICLE_PERFECT));
-
             tagArticleRepository.add(tagArticleRelation);
+
+            final String authorId = article.optString(Article.ARTICLE_AUTHOR_ID);
+
             // User-Tag relation
+            if (Tag.TAG_TYPE_C_ARTICLE == userTagType) {
+                userTagRepository.removeByUserIdAndTagId(authorId, tagId, Tag.TAG_TYPE_C_ARTICLE);
+            }
+
             final JSONObject userTagRelation = new JSONObject();
             userTagRelation.put(Tag.TAG + '_' + Keys.OBJECT_ID, tagId);
             if (Article.ARTICLE_ANONYMOUS_C_ANONYMOUS == article.optInt(Article.ARTICLE_ANONYMOUS)) {
                 userTagRelation.put(User.USER + '_' + Keys.OBJECT_ID, "0");
             } else {
-                userTagRelation.put(User.USER + '_' + Keys.OBJECT_ID, article.optString(Article.ARTICLE_AUTHOR_ID));
+                userTagRelation.put(User.USER + '_' + Keys.OBJECT_ID, authorId);
             }
             userTagRelation.put(Common.TYPE, userTagType);
             userTagRepository.add(userTagRelation);

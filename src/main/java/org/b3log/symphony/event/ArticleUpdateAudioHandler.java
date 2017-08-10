@@ -20,15 +20,14 @@ package org.b3log.symphony.event;
 import org.b3log.latke.event.AbstractEventListener;
 import org.b3log.latke.event.Event;
 import org.b3log.latke.event.EventException;
+import org.b3log.latke.ioc.inject.Inject;
+import org.b3log.latke.ioc.inject.Named;
+import org.b3log.latke.ioc.inject.Singleton;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.symphony.model.Article;
 import org.b3log.symphony.service.ArticleMgmtService;
 import org.json.JSONObject;
-
-import org.b3log.latke.ioc.inject.Inject;;
-import org.b3log.latke.ioc.inject.Named;
-import org.b3log.latke.ioc.inject.Singleton;
 
 /**
  * Article update audio handler.
@@ -65,8 +64,7 @@ public class ArticleUpdateAudioHandler extends AbstractEventListener<JSONObject>
     @Override
     public void action(final Event<JSONObject> event) throws EventException {
         final JSONObject data = event.getData();
-        LOGGER.log(Level.TRACE, "Processing an event[type={0}, data={1}] in listener[className={2}]",
-                event.getType(), data, ArticleAddNotifier.class.getName());
+        LOGGER.log(Level.TRACE, "Processing an event [type={0}, data={1}]", event.getType(), data);
 
         final JSONObject originalArticle = data.optJSONObject(Article.ARTICLE);
         final String authorId = originalArticle.optString(Article.ARTICLE_AUTHOR_ID);

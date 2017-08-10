@@ -17,15 +17,15 @@
  */
 package org.b3log.symphony.service;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
 import org.apache.commons.lang.StringUtils;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.service.annotation.Service;
 import org.b3log.symphony.model.UserExt;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
 
 /**
  * User avatar query service.
@@ -40,7 +40,7 @@ public class AvatarQueryService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(AvatarQueryService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(AvatarQueryService.class);
 
     /**
      * Default avatar URL.
@@ -51,7 +51,7 @@ public class AvatarQueryService {
      * Fills the specified user thumbnail URL.
      *
      * @param viewMode the specified view mode, {@code 0} for original image, {@code 1} for static image
-     * @param user the specified user
+     * @param user     the specified user
      */
     public void fillUserAvatarURL(final int viewMode, final JSONObject user) {
         user.put(UserExt.USER_AVATAR_URL + "210", getAvatarURLByUser(viewMode, user, "210"));
@@ -80,8 +80,8 @@ public class AvatarQueryService {
      * Gets the avatar URL for the specified user with the specified size.
      *
      * @param viewMode the specified view mode, {@code 0} for original image, {@code 1} for static image
-     * @param user the specified user
-     * @param size the specified size
+     * @param user     the specified user
+     * @param size     the specified size
      * @return the avatar URL
      */
     public String getAvatarURLByUser(final int viewMode, final JSONObject user, final String size) {
@@ -127,7 +127,7 @@ public class AvatarQueryService {
 
     /**
      * Creates a avatar image with the specified hash string and size.
-     *
+     * <p>
      * <p>
      * Refers to: https://github.com/superhj1987/awesome-identicon
      * </p>

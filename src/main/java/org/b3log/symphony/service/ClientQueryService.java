@@ -17,8 +17,8 @@
  */
 package org.b3log.symphony.service;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.repository.FilterOperator;
@@ -45,7 +45,7 @@ public class ClientQueryService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(ClientQueryService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ClientQueryService.class);
 
     /**
      * Client repository.
@@ -57,7 +57,7 @@ public class ClientQueryService {
      * Adds a client by the specified administrator email.
      *
      * @param adminEmail the specified administrator email
-     * @return client,returns {@code null} if not found
+     * @return client, returns {@code null} if not found
      * @throws ServiceException service exception
      */
     public JSONObject getClientByAdminEmail(final String adminEmail) throws ServiceException {

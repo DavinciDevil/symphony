@@ -17,15 +17,12 @@
  */
 package org.b3log.symphony.event;
 
-import java.net.URL;
-import java.net.URLEncoder;
-import org.b3log.latke.ioc.inject.Named;
-import org.b3log.latke.ioc.inject.Singleton;
-import javax.servlet.http.HttpServletResponse;
 import org.b3log.latke.Latkes;
 import org.b3log.latke.event.AbstractEventListener;
 import org.b3log.latke.event.Event;
 import org.b3log.latke.event.EventException;
+import org.b3log.latke.ioc.inject.Named;
+import org.b3log.latke.ioc.inject.Singleton;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.servlet.HTTPRequestMethod;
@@ -36,6 +33,10 @@ import org.b3log.latke.urlfetch.URLFetchServiceFactory;
 import org.b3log.symphony.model.Article;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
+
+import javax.servlet.http.HttpServletResponse;
+import java.net.URL;
+import java.net.URLEncoder;
 
 /**
  * Sends an article to QQ qun via <a href="https://github.com/b3log/xiaov">XiaoV</a>.
@@ -51,7 +52,7 @@ public class ArticleQQSender extends AbstractEventListener<JSONObject> {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(ArticleQQSender.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ArticleQQSender.class);
 
     /**
      * URL fetch service.
@@ -61,8 +62,7 @@ public class ArticleQQSender extends AbstractEventListener<JSONObject> {
     @Override
     public void action(final Event<JSONObject> event) throws EventException {
         final JSONObject data = event.getData();
-        LOGGER.log(Level.TRACE, "Processing an event[type={0}, data={1}] in listener[className={2}]",
-                new Object[]{event.getType(), data, ArticleQQSender.class.getName()});
+        LOGGER.log(Level.TRACE, "Processing an event [type={0}, data={1}]", event.getType(), data);
 
         if (!Symphonys.getBoolean("xiaov.enabled")) {
             return;

@@ -17,8 +17,8 @@
  */
 package org.b3log.symphony.service;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.repository.RepositoryException;
@@ -41,7 +41,7 @@ public class ReferralMgmtService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(ReferralMgmtService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ReferralMgmtService.class);
 
     /**
      * Referral repository.

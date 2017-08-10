@@ -17,9 +17,7 @@
  */
 package org.b3log.symphony.processor;
 
-import org.b3log.latke.ioc.inject.Inject;;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.servlet.HTTPRequestContext;
 import org.b3log.latke.servlet.HTTPRequestMethod;
@@ -28,15 +26,15 @@ import org.b3log.latke.servlet.annotation.RequestProcessor;
 import org.b3log.symphony.service.VerifycodeMgmtService;
 import org.b3log.symphony.util.Symphonys;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * Verifycode processor.
- *
- * <p>
  * <ul>
  * <li>Send email verifycode (/cron/verifycode/email), GET</li>
  * <li>Send email verifycode (/cron/verifycode/remove-expired), GET</li>
  * </ul>
- * </p>
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @version 1.0.0.3, Oct 31, 2016
@@ -59,14 +57,14 @@ public class VerifycodeProcessor {
     /**
      * Sends email register verifycode.
      *
-     * @param context the specified context
-     * @param request the specified request
+     * @param context  the specified context
+     * @param request  the specified request
      * @param response the specified response
      * @throws Exception exception
      */
     @RequestProcessing(value = "/cron/verifycode/email", method = HTTPRequestMethod.GET)
     public void sendEmailRegisterVerifycode(final HTTPRequestContext context,
-            final HttpServletRequest request, final HttpServletResponse response) throws Exception {
+                                            final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String key = Symphonys.get("keyOfSymphony");
         if (!key.equals(request.getParameter("key"))) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -82,14 +80,14 @@ public class VerifycodeProcessor {
     /**
      * Remove expired verifycodes.
      *
-     * @param context the specified context
-     * @param request the specified request
+     * @param context  the specified context
+     * @param request  the specified request
      * @param response the specified response
      * @throws Exception exception
      */
     @RequestProcessing(value = "/cron/verifycode/remove-expired", method = HTTPRequestMethod.GET)
     public void removeExpriedVerifycodes(final HTTPRequestContext context,
-            final HttpServletRequest request, final HttpServletResponse response) throws Exception {
+                                         final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String key = Symphonys.get("keyOfSymphony");
         if (!key.equals(request.getParameter("key"))) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);

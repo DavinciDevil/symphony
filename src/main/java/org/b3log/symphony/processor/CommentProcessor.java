@@ -19,6 +19,7 @@ package org.b3log.symphony.processor;
 
 import org.apache.commons.lang.StringUtils;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.User;
@@ -26,6 +27,7 @@ import org.b3log.latke.service.LangPropsService;
 import org.b3log.latke.service.ServiceException;
 import org.b3log.latke.servlet.HTTPRequestContext;
 import org.b3log.latke.servlet.HTTPRequestMethod;
+import org.b3log.latke.servlet.annotation.After;
 import org.b3log.latke.servlet.annotation.Before;
 import org.b3log.latke.servlet.annotation.RequestProcessing;
 import org.b3log.latke.servlet.annotation.RequestProcessor;
@@ -34,13 +36,14 @@ import org.b3log.symphony.model.*;
 import org.b3log.symphony.processor.advice.CSRFCheck;
 import org.b3log.symphony.processor.advice.LoginCheck;
 import org.b3log.symphony.processor.advice.PermissionCheck;
-import org.b3log.symphony.processor.advice.validate.ClientCommentAddValidation;
+import org.b3log.symphony.processor.advice.stopwatch.StopwatchEndAdvice;
+import org.b3log.symphony.processor.advice.stopwatch.StopwatchStartAdvice;
 import org.b3log.symphony.processor.advice.validate.CommentAddValidation;
+import org.b3log.symphony.processor.advice.validate.CommentUpdateValidation;
 import org.b3log.symphony.service.*;
-import org.b3log.symphony.util.StatusCodes;
+import org.b3log.symphony.util.*;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -50,21 +53,22 @@ import java.util.Set;
 
 /**
  * Comment processor.
- * <p>
  * <ul>
  * <li>Adds a comment (/comment) <em>locally</em>, POST</li>
- * <li>Adds a comment (/solo/comment) <em>remotely</em>, POST</li>
+ * <li>Updates a comment (/comment/{id}) <em>locally</em>, PUT</li>
+ * <li>Gets a comment's content (/comment/{id}/content), GET</li>
  * <li>Thanks a comment (/comment/thank), POST</li>
  * <li>Gets a comment's replies (/comment/replies), GET </li>
+ * <li>Gets a comment's revisions (/commment/{id}/revisions), GET</li>
+ * <li>Removes a comment (/comment/{id}/remove), POST</li>
  * </ul>
- * </p>
  * <p>
  * The '<em>locally</em>' means user post a comment on Symphony directly rather than receiving a comment from externally
  * (for example Solo).
  * </p>
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.5.1.13, Jan 21, 2017
+ * @version 1.7.1.14, Jul 4, 2017
  * @since 0.2.0
  */
 @RequestProcessor
@@ -73,7 +77,13 @@ public class CommentProcessor {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(CommentProcessor.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(CommentProcessor.class);
+
+    /**
+     * Revision query service.
+     */
+    @Inject
+    private RevisionQueryService revisionQueryService;
 
     /**
      * User query service.
@@ -122,6 +132,187 @@ public class CommentProcessor {
      */
     @Inject
     private RewardQueryService rewardQueryService;
+
+    /**
+     * Short link query service.
+     */
+    @Inject
+    private ShortLinkQueryService shortLinkQueryService;
+
+    /**
+     * Removes a comment.
+     *
+     * @param context  the specified context
+     * @param request  the specified request
+     * @param response the specified response
+     * @throws Exception exception
+     */
+    @RequestProcessing(value = "/comment/{id}/remove", method = HTTPRequestMethod.POST)
+    @Before(adviceClass = {StopwatchStartAdvice.class, LoginCheck.class, PermissionCheck.class})
+    @After(adviceClass = {StopwatchEndAdvice.class})
+    public void removeComment(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
+                              final String id) throws Exception {
+        if (StringUtils.isBlank(id)) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+
+            return;
+        }
+
+        final JSONObject currentUser = (JSONObject) request.getAttribute(User.USER);
+        final String currentUserId = currentUser.optString(Keys.OBJECT_ID);
+        final JSONObject comment = commentQueryService.getComment(id);
+        if (null == comment) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+
+            return;
+        }
+
+        final String authorId = comment.optString(Comment.COMMENT_AUTHOR_ID);
+        if (!authorId.equals(currentUserId)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+
+            return;
+        }
+
+        context.renderJSON();
+        try {
+            commentMgmtService.removeComment(id);
+
+            context.renderJSONValue(Keys.STATUS_CODE, StatusCodes.SUCC);
+            context.renderJSONValue(Comment.COMMENT_T_ID, id);
+        } catch (final ServiceException e) {
+            final String msg = e.getMessage();
+
+            context.renderMsg(msg);
+            context.renderJSONValue(Keys.STATUS_CODE, StatusCodes.ERR);
+        }
+    }
+
+    /**
+     * Gets a comment's revisions.
+     *
+     * @param context the specified context
+     * @param id      the specified comment id
+     */
+    @RequestProcessing(value = "/comment/{id}/revisions", method = HTTPRequestMethod.GET)
+    @Before(adviceClass = {StopwatchStartAdvice.class, LoginCheck.class, PermissionCheck.class})
+    @After(adviceClass = {StopwatchEndAdvice.class})
+    public void getCommentRevisions(final HTTPRequestContext context, final String id) {
+        final List<JSONObject> revisions = revisionQueryService.getCommentRevisions(id);
+        final JSONObject ret = new JSONObject();
+        ret.put(Keys.STATUS_CODE, true);
+        ret.put(Revision.REVISIONS, (Object) revisions);
+
+        context.renderJSON(ret);
+    }
+
+    /**
+     * Gets a comment's content.
+     *
+     * @param context  the specified context
+     * @param request  the specified request
+     * @param response the specified response
+     * @throws IOException io exception
+     */
+    @RequestProcessing(value = "/comment/{id}/content", method = HTTPRequestMethod.GET)
+    @Before(adviceClass = {LoginCheck.class})
+    public void getCommentContent(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
+                                  final String id) throws IOException {
+        context.renderJSON().renderJSONValue(Keys.STATUS_CODE, StatusCodes.ERR);
+
+        try {
+            final JSONObject comment = commentQueryService.getComment(id);
+            if (null == comment) {
+                LOGGER.warn("Not found comment [id=" + id + "] to update");
+
+                return;
+            }
+
+            final JSONObject currentUser = (JSONObject) request.getAttribute(User.USER);
+            if (!currentUser.optString(Keys.OBJECT_ID).equals(comment.optString(Comment.COMMENT_AUTHOR_ID))) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+
+                return;
+            }
+
+            context.renderJSONValue(Comment.COMMENT_CONTENT, comment.optString(Comment.COMMENT_CONTENT));
+            context.renderJSONValue(Keys.STATUS_CODE, StatusCodes.SUCC);
+        } catch (final ServiceException e) {
+            context.renderMsg(e.getMessage());
+        }
+    }
+
+    /**
+     * Updates a comment locally.
+     * <p>
+     * The request json object:
+     * <pre>
+     * {
+     *     "commentContent": ""
+     * }
+     * </pre>
+     * </p>
+     *
+     * @param context  the specified context
+     * @param request  the specified request
+     * @param response the specified response
+     * @throws IOException io exception
+     */
+    @RequestProcessing(value = "/comment/{id}", method = HTTPRequestMethod.PUT)
+    @Before(adviceClass = {CSRFCheck.class, LoginCheck.class, CommentUpdateValidation.class, PermissionCheck.class})
+    public void updateComment(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
+                              final String id) throws IOException {
+        context.renderJSON().renderJSONValue(Keys.STATUS_CODE, StatusCodes.ERR);
+
+        try {
+            final JSONObject comment = commentQueryService.getComment(id);
+            if (null == comment) {
+                LOGGER.warn("Not found comment [id=" + id + "] to update");
+
+                return;
+            }
+
+            final JSONObject currentUser = (JSONObject) request.getAttribute(User.USER);
+            if (!currentUser.optString(Keys.OBJECT_ID).equals(comment.optString(Comment.COMMENT_AUTHOR_ID))) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+
+                return;
+            }
+
+            final JSONObject requestJSONObject = (JSONObject) request.getAttribute(Keys.REQUEST);
+
+            String commentContent = requestJSONObject.optString(Comment.COMMENT_CONTENT);
+            final String ip = Requests.getRemoteAddr(request);
+            final String ua = request.getHeader(Common.USER_AGENT);
+
+            comment.put(Comment.COMMENT_CONTENT, commentContent);
+            comment.put(Comment.COMMENT_IP, "");
+            if (StringUtils.isNotBlank(ip)) {
+                comment.put(Comment.COMMENT_IP, ip);
+            }
+            comment.put(Comment.COMMENT_UA, "");
+            if (StringUtils.isNotBlank(ua)) {
+                comment.put(Comment.COMMENT_UA, ua);
+            }
+
+            commentMgmtService.updateComment(comment.optString(Keys.OBJECT_ID), comment);
+
+            commentContent = comment.optString(Comment.COMMENT_CONTENT);
+            commentContent = shortLinkQueryService.linkArticle(commentContent);
+            commentContent = shortLinkQueryService.linkTag(commentContent);
+            commentContent = Emotions.toAliases(commentContent);
+            commentContent = Emotions.convert(commentContent);
+            commentContent = Markdowns.toHTML(commentContent);
+            commentContent = Markdowns.clean(commentContent, "");
+            commentContent = MP3Players.render(commentContent);
+            commentContent = VideoPlayers.render(commentContent);
+
+            context.renderJSONValue(Keys.STATUS_CODE, StatusCodes.SUCC);
+            context.renderJSONValue(Comment.COMMENT_CONTENT, commentContent);
+        } catch (final ServiceException e) {
+            context.renderMsg(e.getMessage());
+        }
+    }
 
     /**
      * Gets a comment's original comment.
@@ -231,7 +422,7 @@ public class CommentProcessor {
         final String commentOriginalCommentId = requestJSONObject.optString(Comment.COMMENT_ORIGINAL_COMMENT_ID);
         final int commentViewMode = requestJSONObject.optInt(UserExt.USER_COMMENT_VIEW_MODE);
         final String ip = Requests.getRemoteAddr(request);
-        final String ua = request.getHeader("User-Agent");
+        final String ua = request.getHeader(Common.USER_AGENT);
 
         final boolean isAnonymous = requestJSONObject.optBoolean(Comment.COMMENT_ANONYMOUS, false);
 
@@ -284,7 +475,6 @@ public class CommentProcessor {
             }
 
             comment.put(Comment.COMMENT_AUTHOR_ID, currentUser.optString(Keys.OBJECT_ID));
-
             comment.put(Comment.COMMENT_T_COMMENTER, currentUser);
             comment.put(Comment.COMMENT_ANONYMOUS, isAnonymous
                     ? Comment.COMMENT_ANONYMOUS_C_ANONYMOUS : Comment.COMMENT_ANONYMOUS_C_PUBLIC);
@@ -340,98 +530,5 @@ public class CommentProcessor {
         } catch (final ServiceException e) {
             context.renderMsg(e.getMessage());
         }
-    }
-
-    /**
-     * Adds a comment remotely.
-     * <p>
-     * The request json object (a comment):
-     * <pre>
-     * {
-     *     "comment": {
-     *         "commentId": "", // client comment id
-     *         "articleId": "",
-     *         "commentContent": "",
-     *         "commentAuthorName": "", // optional, 'default commenter'
-     *         "commentAuthorEmail": "" // optional, 'default commenter'
-     *     },
-     *     "clientName": "",
-     *     "clientVersion": "",
-     *     "clientHost": "",
-     *     "clientRuntimeEnv": "" // LOCAL
-     *     "clientAdminEmail": "",
-     *     "userB3Key": ""
-     * }
-     * </pre>
-     * </p>
-     *
-     * @param context  the specified context
-     * @param request  the specified request
-     * @param response the specified response
-     * @throws Exception exception
-     */
-    @RequestProcessing(value = "/solo/comment", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = ClientCommentAddValidation.class)
-    public void addCommentFromSolo(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
-        LOGGER.log(Level.DEBUG, "Adds a comment from solo");
-
-        final JSONObject requestJSONObject = (JSONObject) request.getAttribute(Keys.REQUEST);
-        final JSONObject originalCmt = requestJSONObject.optJSONObject(Comment.COMMENT);
-        final JSONObject article = (JSONObject) request.getAttribute(Article.ARTICLE);
-        final String ip = Requests.getRemoteAddr(request);
-        final String ua = request.getHeader("User-Agent");
-
-        final JSONObject defaultCommenter = userQueryService.getDefaultCommenter();
-        final JSONObject comment = new JSONObject();
-        comment.put(Comment.COMMENT_AUTHOR_ID, defaultCommenter.optString(Keys.OBJECT_ID));
-        comment.put(Comment.COMMENT_CLIENT_COMMENT_ID, originalCmt.optString(Comment.COMMENT_T_ID));
-        comment.put(Comment.COMMENT_CONTENT, originalCmt.optString(Comment.COMMENT_CONTENT));
-        comment.put(Comment.COMMENT_ON_ARTICLE_ID, article.optString(Keys.OBJECT_ID));
-        comment.put(Comment.COMMENT_T_COMMENTER, defaultCommenter);
-        comment.put(Comment.COMMENT_IP, "");
-        if (StringUtils.isNotBlank(ip)) {
-            comment.put(Comment.COMMENT_IP, ip);
-        }
-        comment.put(Comment.COMMENT_UA, "");
-        if (StringUtils.isNotBlank(ua)) {
-            comment.put(Comment.COMMENT_UA, ua);
-        }
-
-        comment.put(Comment.COMMENT_T_AUTHOR_NAME, originalCmt.optString(Comment.COMMENT_T_AUTHOR_NAME));
-
-        commentMgmtService.addComment(comment);
-
-        // Updates client record
-        final String clientAdminEmail = requestJSONObject.optString(Client.CLIENT_ADMIN_EMAIL);
-        final String clientName = requestJSONObject.optString(Client.CLIENT_NAME);
-        final String clientVersion = requestJSONObject.optString(Client.CLIENT_VERSION);
-        final String clientHost = requestJSONObject.optString(Client.CLIENT_HOST);
-        final String clientRuntimeEnv = requestJSONObject.optString(Client.CLIENT_RUNTIME_ENV);
-
-        JSONObject client = clientQueryService.getClientByAdminEmail(clientAdminEmail);
-        if (null == client) {
-            client = new JSONObject();
-            client.put(Client.CLIENT_ADMIN_EMAIL, clientAdminEmail);
-            client.put(Client.CLIENT_HOST, clientHost);
-            client.put(Client.CLIENT_NAME, clientName);
-            client.put(Client.CLIENT_RUNTIME_ENV, clientRuntimeEnv);
-            client.put(Client.CLIENT_VERSION, clientVersion);
-            client.put(Client.CLIENT_LATEST_ADD_COMMENT_TIME, System.currentTimeMillis());
-            client.put(Client.CLIENT_LATEST_ADD_ARTICLE_TIME, 0L);
-
-            clientMgmtService.addClient(client);
-        } else {
-            client.put(Client.CLIENT_ADMIN_EMAIL, clientAdminEmail);
-            client.put(Client.CLIENT_HOST, clientHost);
-            client.put(Client.CLIENT_NAME, clientName);
-            client.put(Client.CLIENT_RUNTIME_ENV, clientRuntimeEnv);
-            client.put(Client.CLIENT_VERSION, clientVersion);
-            client.put(Client.CLIENT_LATEST_ADD_COMMENT_TIME, System.currentTimeMillis());
-
-            clientMgmtService.updateClient(client);
-        }
-
-        LOGGER.log(Level.DEBUG, "Added a comment from solo");
     }
 }

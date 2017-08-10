@@ -17,20 +17,16 @@
  */
 package org.b3log.symphony.processor.channel;
 
+import org.b3log.latke.logging.Logger;
+import org.b3log.symphony.model.Common;
+import org.json.JSONObject;
+
+import javax.websocket.*;
+import javax.websocket.server.ServerEndpoint;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.websocket.CloseReason;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
-import org.b3log.latke.logging.Logger;
-import org.b3log.symphony.model.Common;
-import org.json.JSONObject;
 
 /**
  * Char room channel.
@@ -45,7 +41,7 @@ public class ChatRoomChannel {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(ChatRoomChannel.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ChatRoomChannel.class);
 
     /**
      * Session set.

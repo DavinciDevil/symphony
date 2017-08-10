@@ -17,27 +17,24 @@
  */
 package org.b3log.symphony.service;
 
-import java.net.URL;
-import java.net.UnknownHostException;
 import org.b3log.latke.Keys;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.service.annotation.Service;
 import org.b3log.latke.servlet.HTTPRequestMethod;
-import org.b3log.latke.urlfetch.HTTPHeader;
-import org.b3log.latke.urlfetch.HTTPRequest;
-import org.b3log.latke.urlfetch.HTTPResponse;
-import org.b3log.latke.urlfetch.URLFetchService;
-import org.b3log.latke.urlfetch.URLFetchServiceFactory;
+import org.b3log.latke.urlfetch.*;
 import org.b3log.symphony.model.Article;
 import org.b3log.symphony.util.Markdowns;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 
+import java.net.URL;
+import java.net.UnknownHostException;
+
 /**
  * Search management service.
- *
+ * <p>
  * Uses <a href="https://www.elastic.co/products/elasticsearch">Elasticsearch</a> or
  * <a href="https://www.algolia.com">Algolia</a> as the underlying engine.
  *
@@ -49,11 +46,6 @@ import org.jsoup.Jsoup;
 public class SearchMgmtService {
 
     /**
-     * Logger.
-     */
-    private static final Logger LOGGER = Logger.getLogger(SearchMgmtService.class.getName());
-
-    /**
      * Elasticsearch index name.
      */
     public static final String ES_INDEX_NAME = "symphony";
@@ -62,6 +54,11 @@ public class SearchMgmtService {
      * Elasticsearch serve address.
      */
     public static final String ES_SERVER = Symphonys.get("es.server");
+
+    /**
+     * Logger.
+     */
+    private static final Logger LOGGER = Logger.getLogger(SearchMgmtService.class);
 
     /**
      * URL fetch service.
@@ -158,7 +155,7 @@ public class SearchMgmtService {
     /**
      * Updates/Adds indexing the specified document in ES.
      *
-     * @param doc the specified document
+     * @param doc  the specified document
      * @param type the specified document type
      */
     public void updateESDocument(final JSONObject doc, final String type) {
@@ -183,7 +180,7 @@ public class SearchMgmtService {
     /**
      * Removes the specified document in ES.
      *
-     * @param doc the specified document
+     * @param doc  the specified document
      * @param type the specified document type
      */
     public void removeESDocument(final JSONObject doc, final String type) {
@@ -243,7 +240,6 @@ public class SearchMgmtService {
                 }
 
                 request.setURL(new URL("https://" + host + "/1/indexes/" + index + "/" + id));
-
                 request.setPayload(data);
 
                 final HTTPResponse response = URL_FETCH_SVC.fetch(request);

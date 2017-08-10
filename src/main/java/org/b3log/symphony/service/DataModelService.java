@@ -20,6 +20,7 @@ package org.b3log.symphony.service;
 import org.apache.commons.lang.math.RandomUtils;
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.User;
@@ -35,7 +36,6 @@ import org.b3log.symphony.util.Sessions;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.*;
@@ -44,7 +44,7 @@ import java.util.*;
  * Data model service.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.12.2.26, Mar 6, 2017
+ * @version 1.12.2.29, May 24, 2017
  * @since 0.2.0
  */
 @Service
@@ -53,17 +53,7 @@ public class DataModelService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(DataModelService.class.getName());
-
-    /**
-     * Icon configuration.
-     */
-    private static final ResourceBundle ICON_CONF = ResourceBundle.getBundle("icon");
-
-    /**
-     * Icons.
-     */
-    private static Map<String, String> ICONS;
+    private static final Logger LOGGER = Logger.getLogger(DataModelService.class);
 
     /**
      * Language service.
@@ -147,6 +137,13 @@ public class DataModelService {
      */
     public void fillRelevantArticles(final int avatarViewMode,
                                      final Map<String, Object> dataModel, final JSONObject article) throws Exception {
+        final int articleStatus = article.optInt(Article.ARTICLE_STATUS);
+        if (Article.ARTICLE_STATUS_C_VALID != articleStatus) {
+            dataModel.put(Common.SIDE_RELEVANT_ARTICLES, Collections.emptyList());
+
+            return;
+        }
+
         Stopwatchs.start("Fills relevant articles");
         try {
             dataModel.put(Common.SIDE_RELEVANT_ARTICLES,
@@ -281,7 +278,6 @@ public class DataModelService {
         fillPersonalNav(request, response, dataModel);
 
         fillLangs(dataModel);
-        fillIcons(dataModel);
         fillSideAd(dataModel);
         fillHeaderBanner(dataModel);
         fillSideTips(dataModel);
@@ -423,7 +419,7 @@ public class DataModelService {
 
             final int livenessMax = Symphonys.getInt("activitYesterdayLivenessReward.maxPoint");
             final int currentLiveness = livenessQueryService.getCurrentLivenessPoint(userId);
-            dataModel.put(Liveness.LIVENESS, (float) currentLiveness / livenessMax * 100);
+            dataModel.put(Liveness.LIVENESS, (float) (Math.round((float) currentLiveness / livenessMax * 100 * 100)) / 100);
         } finally {
             Stopwatchs.end();
         }
@@ -456,36 +452,6 @@ public class DataModelService {
         Stopwatchs.start("Fills lang");
         try {
             dataModel.putAll(langPropsService.getAll(Locales.getLocale()));
-        } finally {
-            Stopwatchs.end();
-        }
-    }
-
-    /**
-     * Fills the all icons.
-     *
-     * @param dataModel the specified data model
-     */
-    private void fillIcons(final Map<String, Object> dataModel) {
-        Stopwatchs.start("Fills icons");
-        try {
-            if (null == ICONS) {
-                ICONS = new HashMap<>();
-
-                final Enumeration<String> keys = ICON_CONF.getKeys();
-                while (keys.hasMoreElements()) {
-                    final String key = keys.nextElement();
-                    String value = ICON_CONF.getString(key);
-
-                    if ("logoIcon".equals(key)) {
-                        value = value.replace("${servePath}", Latkes.getServePath());
-                    }
-
-                    ICONS.put(key, value);
-                }
-            }
-
-            dataModel.putAll(ICONS);
         } finally {
             Stopwatchs.end();
         }

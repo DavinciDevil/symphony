@@ -20,7 +20,7 @@
  *
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 2.11.12.30, Mar 30, 2017
+ * @version 2.11.14.33, May 22, 2017
  */
 
 @import "variables";
@@ -36,7 +36,7 @@
         padding: 10px 15px;
         text-shadow: 0 1px 0 #fff;
         border-bottom: 1px solid #eee;
-        color: #666;
+        color: $theme-secondary;
     }
 
     a:last-child {
@@ -61,7 +61,7 @@
         right: 0px;
         top: 0px;
         border-width: 10px 10px 10px 10px;
-        border-color: $red $red transparent transparent;
+        border-color: $theme-accent $theme-accent transparent transparent;
     }
 
     a.current::before {
@@ -71,12 +71,12 @@
         left: 0;
         width: 2px;
         content: "";
-        background-color: $red;
+        background-color: $theme-accent;
     }
 }
 
 .home-side-read {
-    color: #666;
+    color: #222;
 }
 
 .home-menu a span:last-child:hover,
@@ -94,7 +94,6 @@
     font-size: 20px;
     font-weight: 300;
     line-height: 26px;
-    border-bottom: 1px dotted #CCC;
     margin-bottom: 20px;
     padding: 20px 10px 25px 10px;
 
@@ -105,7 +104,7 @@
 
     .online,
     .offline {
-        background-color: $red;
+        background-color: $theme-accent;
         color: #fff;
         font-size: 12px;
         line-height: 20px;
@@ -135,7 +134,7 @@
 .user-info {
     line-height: 24px;
     font-size: 12px;
-    color: #666666;
+    color: $theme-secondary;
 }
 
 .user-intro {
@@ -146,7 +145,7 @@
 
 /* start add article */
 .pre-post-wrap {
-    background-color: $light-blue;
+    background-color: #fff;
 }
 
 .pre-post > div {
@@ -167,12 +166,13 @@
     color: $blue;
 }
 
-.pre-post a div {
-    font-size: 50px;
+.pre-post a svg {
+    height: 50px;
+    width: 50px;
     margin-bottom: 50px;
 }
 
-.pre-post div.ft-fade {
+.pre-post div.ft-gray {
     font-size: 15px;
     margin: 20px 30px 0;
     text-align: left;
@@ -185,13 +185,20 @@
     line-height: 22px;
 }
 
-label.article-anonymous {
+.fn-right > .article-anonymous {
     margin: 7px 15px 0 0;
+    line-height: 20px;
+    float: left;
 }
 
 .post {
     background-color: #FFF;
     padding-top: 0;
+
+    &__info {
+        float: left;
+        margin: 2px 5px 0 0;
+    }
 
     .cm-s-default.CodeMirror {
         border: 0;
@@ -226,7 +233,7 @@ label.article-anonymous {
             margin-bottom: 0;
             width: auto;
             right: 10px;
-            background-color: $light-blue;
+            background-color: $blue-lighter;
     }
 
     #articleContent {
@@ -259,7 +266,7 @@ label.article-anonymous {
     .tags-input,
      #articleRewardPoint {
         background-color: #fff;
-        padding: 6px 15px;
+        padding: 5px 10px;
         width: 100%;
         line-height: 20px;
         border-bottom: 1px solid #f2f2f2;
@@ -268,20 +275,25 @@ label.article-anonymous {
     }
 
     .tags-input span.tag {
-        margin: 2px 5px 0 0px;
+        margin: 0 5px 0 0px;
         padding: 0 5px;
         background: #eee;
         color: #999;
+        line-height: 22px;
     }
 
     .tags-input .tag > span.close {
         cursor: pointer;
-        margin-left: 5px;
-        color: #999;
+        padding-left: 5px;
+        color: $theme-secondary;
+
+        &:hover {
+            color: $theme-accent;
+        }
     }
 
     .tags-input span.tag.haved {
-        color: #333;
+        color: $black-text;
         background-color: #ccc;
         transition: background 0.5s ease-in,color 0.3s ease-out;
     }
@@ -304,11 +316,11 @@ label.article-anonymous {
         display: none;
         position: absolute;
         background-color: #FFF;
-        border: 1px solid #e5e5e5;
+        border: 1px solid #eee;
         z-index: 82;
         border-radius: 0 0 3px 3px;
         width: 50%;
-        top: 35px;
+        top: 33px;
         box-sizing: border-box;
         padding: 10px;
     }
@@ -355,12 +367,12 @@ label.article-anonymous {
 }
 
 .tabs a.selected {
-    border-color: $red;
+    border-color: $theme-accent;
     color: #212121;
 }
 
 .tabs a:hover {
-    background-color: rgba(0,0,0,.03);
+    background-color: rgba(0,0,0,.02);
 }
 
 .tabs-sub > a > .count {
@@ -388,22 +400,12 @@ label.article-anonymous {
 .follow.list h2 {
     margin-bottom: 6px;
 }
-
-.follow .icon-tags {
-    font-size: 37px;
-    margin-right: 10px;
-    width: 38px;
-    line-height: 38px;
-}
 /* end follow */
 
 /* start admin */
 .admin {
     .form {
         padding: 8px 15px;
-        border-bottom: 1px solid #e5e5e5;
-        background: #f9fafb;
-        border-radius: 3px 3px 0 0;
     }
 
     .tags {
@@ -466,11 +468,11 @@ label.article-anonymous {
 }
 
 .points .name a {
-   color: #666;
+   color: $theme-secondary;
 }
 
 .points .name a:hover {
-    color: #333;
+    color: $black-text;
 }
 
 .points .type {
@@ -482,7 +484,7 @@ label.article-anonymous {
     text-align: center;
     width: 35px;
     padding: 0 10px;
-    color: $red;
+    color: $theme-accent;
     font-weight: 700;
 }
 
@@ -493,6 +495,11 @@ label.article-anonymous {
 .points .balance {
     width: 40px;
     padding: 15px 15px 15px 10px;
+}
+
+.top-ranking {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
 }
 /* end points */
 
@@ -529,13 +536,5 @@ label.article-anonymous {
 
 #pointBuyInvitecode {
     padding: 0;
-}
-
-.point-pagination {
-    border-bottom: 1px solid #eee;
-}
-
-.point-pagination .pagination {
-    border-radius: 0;
 }
 /* end settings */

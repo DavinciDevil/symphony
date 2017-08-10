@@ -65,15 +65,17 @@ public class ArticleChannel {
      * Session set.
      */
     public static final Set<Session> SESSIONS = Collections.newSetFromMap(new ConcurrentHashMap());
+
     /**
      * Article viewing map &lt;articleId, count&gt;.
      */
     public static final Map<String, Integer> ARTICLE_VIEWS
             = Collections.synchronizedMap(new HashMap<String, Integer>());
+
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(ArticleChannel.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ArticleChannel.class);
 
     /**
      * Notifies the specified article heat message to browsers.
@@ -168,6 +170,7 @@ public class ArticleChannel {
                 message.put(Common.REWARED_COUNT, 0);
                 message.put(Comment.COMMENT_T_VOTE, -1);
                 message.put(Common.REWARDED, false);
+                message.put(Comment.COMMENT_REVISION_COUNT, 1);
 
                 final Map dataModel = new HashMap();
                 dataModel.put(Common.IS_LOGGED_IN, isLoggedIn);

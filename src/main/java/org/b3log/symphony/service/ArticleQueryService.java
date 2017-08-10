@@ -23,6 +23,7 @@ import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.Pagination;
@@ -48,7 +49,6 @@ import org.jsoup.parser.Parser;
 import org.jsoup.safety.Whitelist;
 import org.jsoup.select.Elements;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.servlet.http.HttpServletRequest;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -58,7 +58,7 @@ import java.util.*;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 2.27.29.52, Apr 5, 2017
+ * @version 2.27.32.60, Aug 7, 2017
  * @since 0.2.0
  */
 @Service
@@ -67,76 +67,85 @@ public class ArticleQueryService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(ArticleQueryService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ArticleQueryService.class);
+
     /**
      * Count to fetch article tags for relevant articles.
      */
     private static final int RELEVANT_ARTICLE_RANDOM_FETCH_TAG_CNT = 3;
+
     /**
      * Article repository.
      */
     @Inject
     private ArticleRepository articleRepository;
+
     /**
      * Comment repository.
      */
     @Inject
     private CommentRepository commentRepository;
+
     /**
      * Tag-Article repository.
      */
     @Inject
     private TagArticleRepository tagArticleRepository;
+
     /**
      * Tag repository.
      */
     @Inject
     private TagRepository tagRepository;
+
     /**
      * User repository.
      */
     @Inject
     private UserRepository userRepository;
+
     /**
      * Domain tag repository.
      */
     @Inject
     private DomainTagRepository domainTagRepository;
-    /**
-     * Revision repository.
-     */
-    @Inject
-    private RevisionRepository revisionRepository;
+
     /**
      * Comment query service.
      */
     @Inject
     private CommentQueryService commentQueryService;
+
     /**
      * User query service.
      */
     @Inject
     private UserQueryService userQueryService;
+
     /**
      * Avatar query service.
      */
     @Inject
     private AvatarQueryService avatarQueryService;
+
     /**
      * Short link query service.
      */
     @Inject
     private ShortLinkQueryService shortLinkQueryService;
+
     /**
      * Follow query service.
      */
     @Inject
     private FollowQueryService followQueryService;
+
     /**
      * Language service.
      */
     @Inject
     private LangPropsService langPropsService;
+
     /**
      * Article cache.
      */
@@ -557,7 +566,6 @@ public class ArticleQueryService {
     /**
      * Gets the relevant articles of the specified article with the specified fetch size.
      * <p>
-     * <p>
      * The relevant articles exist the same tag with the specified article.
      * </p>
      *
@@ -570,7 +578,17 @@ public class ArticleQueryService {
     public List<JSONObject> getRelevantArticles(final int avatarViewMode, final JSONObject article, final int fetchSize)
             throws ServiceException {
         final String tagsString = article.optString(Article.ARTICLE_TAGS);
-        final String[] tagTitles = tagsString.split(",");
+        String[] tagTitles = tagsString.split(",");
+        final List<String> excludedB3logTitles = new ArrayList<>();
+        for (int i = 0; i < tagTitles.length; i++) {
+            if (!"B3log".equalsIgnoreCase(tagTitles[i])) {
+                excludedB3logTitles.add(tagTitles[i]);
+            }
+        }
+        if (excludedB3logTitles.size() < 1) {
+            excludedB3logTitles.add("B3log");
+        }
+        tagTitles = excludedB3logTitles.toArray(new String[0]);
         final int tagTitlesLength = tagTitles.length;
         final int subCnt = tagTitlesLength > RELEVANT_ARTICLE_RANDOM_FETCH_TAG_CNT
                 ? RELEVANT_ARTICLE_RANDOM_FETCH_TAG_CNT : tagTitlesLength;
@@ -970,69 +988,51 @@ public class ArticleQueryService {
                 default:
                     LOGGER.warn("Unknown sort mode [" + sortMode + "]");
                 case 0:
-                    Collections.sort(ret, new Comparator<JSONObject>() {
-                        @Override
-                        public int compare(final JSONObject o1, final JSONObject o2) {
-                            return o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID));
-                        }
-                    });
+                    Collections.sort(ret, (o1, o2) -> o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID)));
 
                     break;
                 case 1:
-                    Collections.sort(ret, new Comparator<JSONObject>() {
-                        @Override
-                        public int compare(final JSONObject o1, final JSONObject o2) {
-                            final int v = o2.optInt(Article.ARTICLE_COMMENT_CNT) - o1.optInt(Article.ARTICLE_COMMENT_CNT);
-                            if (0 == v) {
-                                return o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID));
-                            }
-
-                            return v > 0 ? 1 : -1;
+                    Collections.sort(ret, (o1, o2) -> {
+                        final int v = o2.optInt(Article.ARTICLE_COMMENT_CNT) - o1.optInt(Article.ARTICLE_COMMENT_CNT);
+                        if (0 == v) {
+                            return o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID));
                         }
+
+                        return v > 0 ? 1 : -1;
                     });
 
                     break;
                 case 2:
-                    Collections.sort(ret, new Comparator<JSONObject>() {
-                        @Override
-                        public int compare(final JSONObject o1, final JSONObject o2) {
-                            final double v = o2.optDouble(Article.REDDIT_SCORE) - o1.optDouble(Article.REDDIT_SCORE);
-                            if (0 == v) {
-                                return o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID));
-                            }
-
-                            return v > 0 ? 1 : -1;
+                    Collections.sort(ret, (o1, o2) -> {
+                        final double v = o2.optDouble(Article.REDDIT_SCORE) - o1.optDouble(Article.REDDIT_SCORE);
+                        if (0 == v) {
+                            return o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID));
                         }
+
+                        return v > 0 ? 1 : -1;
                     });
 
                     break;
                 case 3:
-                    Collections.sort(ret, new Comparator<JSONObject>() {
-                        @Override
-                        public int compare(final JSONObject o1, final JSONObject o2) {
-                            final long v = (o2.optLong(Article.ARTICLE_LATEST_CMT_TIME)
-                                    - o1.optLong(Article.ARTICLE_LATEST_CMT_TIME));
-                            if (0 == v) {
-                                return o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID));
-                            }
-
-                            return v > 0 ? 1 : -1;
+                    Collections.sort(ret, (o1, o2) -> {
+                        final long v = (o2.optLong(Article.ARTICLE_LATEST_CMT_TIME)
+                                - o1.optLong(Article.ARTICLE_LATEST_CMT_TIME));
+                        if (0 == v) {
+                            return o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID));
                         }
+
+                        return v > 0 ? 1 : -1;
                     });
 
                     break;
                 case 4:
-                    Collections.sort(ret, new Comparator<JSONObject>() {
-                        @Override
-                        public int compare(final JSONObject o1, final JSONObject o2) {
-                            final long v = (o2.optLong(Article.ARTICLE_PERFECT)
-                                    - o1.optLong(Article.ARTICLE_PERFECT));
-                            if (0 == v) {
-                                return o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID));
-                            }
-
-                            return v > 0 ? 1 : -1;
+                    Collections.sort(ret, (o1, o2) -> {
+                        final long v = (o2.optLong(Article.ARTICLE_PERFECT) - o1.optLong(Article.ARTICLE_PERFECT));
+                        if (0 == v) {
+                            return o2.optString(Keys.OBJECT_ID).compareTo(o1.optString(Keys.OBJECT_ID));
                         }
+
+                        return v > 0 ? 1 : -1;
                     });
 
                     break;
@@ -1130,45 +1130,6 @@ public class ArticleQueryService {
     }
 
     /**
-     * Gets article revisions.
-     *
-     * @param articleId the specified article id
-     * @return article revisions, returns an empty list if not found
-     */
-    public List<JSONObject> getArticleRevisions(final String articleId) {
-        final Query query = new Query().setFilter(CompositeFilterOperator.and(
-                new PropertyFilter(Revision.REVISION_DATA_ID, FilterOperator.EQUAL, articleId),
-                new PropertyFilter(Revision.REVISION_DATA_TYPE, FilterOperator.EQUAL, Revision.DATA_TYPE_C_ARTICLE)
-        )).addSort(Keys.OBJECT_ID, SortDirection.ASCENDING);
-
-        try {
-            final List<JSONObject> ret = CollectionUtils.jsonArrayToList(revisionRepository.get(query).optJSONArray(Keys.RESULTS));
-            for (final JSONObject rev : ret) {
-                final JSONObject data = new JSONObject(rev.optString(Revision.REVISION_DATA));
-                String articleTitle = data.optString(Article.ARTICLE_TITLE);
-                articleTitle = articleTitle.replace("<", "&lt;").replace(">", "&gt;");
-                articleTitle = Markdowns.clean(articleTitle, "");
-                data.put(Article.ARTICLE_TITLE, articleTitle);
-
-                String articleContent = data.optString(Article.ARTICLE_CONTENT);
-                // articleContent = Markdowns.toHTML(articleContent); https://hacpai.com/article/1490233597586
-                articleContent = articleContent.replace("\n", "_esc_br_");
-                articleContent = Markdowns.clean(articleContent, "");
-                articleContent = articleContent.replace("_esc_br_", "\n");
-                data.put(Article.ARTICLE_CONTENT, articleContent);
-
-                rev.put(Revision.REVISION_DATA, data);
-            }
-
-            return ret;
-        } catch (final RepositoryException | JSONException e) {
-            LOGGER.log(Level.ERROR, "Get article revisions failed", e);
-
-            return Collections.emptyList();
-        }
-    }
-
-    /**
      * Gets preview content of the article specified with the given article id.
      *
      * @param articleId the given article id
@@ -1182,10 +1143,11 @@ public class ArticleQueryService {
             return null;
         }
 
-        return getPreviewContent(article, request);
-    }
+        final int articleType = article.optInt(Article.ARTICLE_TYPE);
+        if (Article.ARTICLE_TYPE_C_THOUGHT == articleType) {
+            return null;
+        }
 
-    private String getPreviewContent(final JSONObject article, final HttpServletRequest request) throws ServiceException {
         Stopwatchs.start("Get preview content");
 
         try {
@@ -1203,7 +1165,7 @@ public class ArticleQueryService {
             final JSONObject currentUser = userQueryService.getCurrentUser(request);
             final String currentUserName = null == currentUser ? "" : currentUser.optString(User.USER_NAME);
             final String authorName = author.optString(User.USER_NAME);
-            if (Article.ARTICLE_TYPE_C_DISCUSSION == article.optInt(Article.ARTICLE_TYPE)
+            if (Article.ARTICLE_TYPE_C_DISCUSSION == articleType
                     && !authorName.equals(currentUserName)) {
                 boolean invited = false;
                 for (final String userName : userNames) {
@@ -2065,7 +2027,6 @@ public class ArticleQueryService {
 
     /**
      * Organizes the specified article.
-     * <p>
      * <ul>
      * <li>converts create/update/latest comment time (long) to date type</li>
      * <li>generates author thumbnail URL</li>
@@ -2190,6 +2151,11 @@ public class ArticleQueryService {
      * @return the first image URL, returns {@code ""} if not found
      */
     private String getArticleThumbnail(final JSONObject article) {
+        final int articleType = article.optInt(Article.ARTICLE_TYPE);
+        if (Article.ARTICLE_TYPE_C_THOUGHT == articleType) {
+            return "";
+        }
+
         final String content = article.optString(Article.ARTICLE_CONTENT);
         final String html = Markdowns.toHTML(content);
         String ret = StringUtils.substringBetween(html, "<img src=\"", "\"");
@@ -2227,6 +2193,11 @@ public class ArticleQueryService {
             return;
         }
 
+        final int articleType = article.optInt(Article.ARTICLE_TYPE);
+        if (Article.ARTICLE_TYPE_C_THOUGHT == articleType) {
+            return;
+        }
+
         final String qiniuDomain = Symphonys.get("qiniu.domain");
         String content = article.optString(Article.ARTICLE_CONTENT);
         final String html = Markdowns.toHTML(content);
@@ -2244,7 +2215,7 @@ public class ArticleQueryService {
             content = StringUtils.replaceOnce(content, imgSrc, imgSrc + "?imageView2/2/w/768/format/jpg/interlace/0/q");
         }
 
-       article.put(Article.ARTICLE_CONTENT, content);
+        article.put(Article.ARTICLE_CONTENT, content);
     }
 
     /**
@@ -2404,7 +2375,6 @@ public class ArticleQueryService {
 
     /**
      * Processes the specified article content.
-     * <p>
      * <ul>
      * <li>Generates &#64;username home URL</li>
      * <li>Markdowns</li>
@@ -2448,14 +2418,17 @@ public class ArticleQueryService {
             String articleContent = article.optString(Article.ARTICLE_CONTENT);
             article.put(Common.DISCUSSION_VIEWABLE, true);
 
-            final Set<String> userNames = userQueryService.getUserNames(articleContent);
             final JSONObject currentUser = userQueryService.getCurrentUser(request);
             final String currentUserName = null == currentUser ? "" : currentUser.optString(User.USER_NAME);
             final String currentRole = null == currentUser ? "" : currentUser.optString(User.USER_ROLE);
             final String authorName = article.optString(Article.ARTICLE_T_AUTHOR_NAME);
-            if (Article.ARTICLE_TYPE_C_DISCUSSION == article.optInt(Article.ARTICLE_TYPE)
+
+            final int articleType = article.optInt(Article.ARTICLE_TYPE);
+            if (Article.ARTICLE_TYPE_C_DISCUSSION == articleType
                     && !authorName.equals(currentUserName) && !Role.ROLE_ID_C_ADMIN.equals(currentRole)) {
                 boolean invited = false;
+
+                final Set<String> userNames = userQueryService.getUserNames(articleContent);
                 for (final String userName : userNames) {
                     if (userName.equals(currentUserName)) {
                         invited = true;
@@ -2480,33 +2453,28 @@ public class ArticleQueryService {
                 }
             }
 
-            for (final String userName : userNames) {
-                articleContent = articleContent.replace('@' + userName + " ", "@<a href='" + Latkes.getServePath()
-                        + "/member/" + userName + "'>" + userName + "</a> ");
+            if (Article.ARTICLE_TYPE_C_THOUGHT != articleType) {
+                articleContent = shortLinkQueryService.linkArticle(articleContent);
+                articleContent = shortLinkQueryService.linkTag(articleContent);
+                articleContent = Emotions.convert(articleContent);
+                article.put(Article.ARTICLE_CONTENT, articleContent);
             }
 
-            articleContent = shortLinkQueryService.linkArticle(articleContent);
-            articleContent = shortLinkQueryService.linkTag(articleContent);
-
-            articleContent = Emotions.convert(articleContent);
-            article.put(Article.ARTICLE_CONTENT, articleContent);
-
             if (article.optInt(Article.ARTICLE_REWARD_POINT) > 0) {
-                String articleRewardContent = article.optString(Article.ARTICLE_REWARD_CONTENT);
-
-                final Set<String> rewordContentUserNames = userQueryService.getUserNames(articleRewardContent);
-
-                for (final String userName : rewordContentUserNames) {
-                    articleRewardContent = articleRewardContent.replace('@' + userName + " ",
-                            "@<a href='" + Latkes.getServePath() + "/member/" + userName + "'>" + userName + "</a> ");
-                }
-
-                articleRewardContent = Emotions.convert(articleRewardContent);
-                article.put(Article.ARTICLE_REWARD_CONTENT, articleRewardContent);
+                String rewardContent = article.optString(Article.ARTICLE_REWARD_CONTENT);
+                rewardContent = shortLinkQueryService.linkArticle(rewardContent);
+                rewardContent = shortLinkQueryService.linkTag(rewardContent);
+                rewardContent = Emotions.convert(rewardContent);
+                article.put(Article.ARTICLE_REWARD_CONTENT, rewardContent);
             }
 
             markdown(article);
-            articleContent = MP3Players.render(article.optString(Article.ARTICLE_CONTENT));
+            articleContent = article.optString(Article.ARTICLE_CONTENT);
+
+            if (Article.ARTICLE_TYPE_C_THOUGHT != articleType) {
+                articleContent = MP3Players.render(articleContent);
+                articleContent = VideoPlayers.render(articleContent);
+            }
 
             article.put(Article.ARTICLE_CONTENT, articleContent);
             article.put(Article.ARTICLE_T_PREVIEW_CONTENT, getArticleMetaDesc(article));
@@ -2597,7 +2565,6 @@ public class ArticleQueryService {
 
     /**
      * Markdowns the specified article content.
-     * <p>
      * <ul>
      * <li>Markdowns article content/reward content</li>
      * <li>Generates secured article content/reward content</li>
@@ -2663,7 +2630,7 @@ public class ArticleQueryService {
             final int length = Integer.valueOf("150");
 
             String ret = article.optString(Article.ARTICLE_CONTENT);
-
+            ret = Emotions.clear(ret);
             try {
                 ret = Markdowns.toHTML(ret);
             } catch (final Exception e) {
@@ -2782,24 +2749,20 @@ public class ArticleQueryService {
     private String getArticleToC(final JSONObject article) {
         Stopwatchs.start("ToC");
 
+        if (Article.ARTICLE_TYPE_C_THOUGHT == article.optInt(Article.ARTICLE_TYPE)) {
+            return "";
+        }
+
         try {
-            String content = article.optString(Article.ARTICLE_CONTENT);
-
-            if (Article.ARTICLE_TYPE_C_THOUGHT == article.optInt(Article.ARTICLE_TYPE)) {
-                return "";
-            }
-
+            final String content = article.optString(Article.ARTICLE_CONTENT);
             final Document doc = Jsoup.parse(content, StringUtils.EMPTY, Parser.htmlParser());
             doc.outputSettings().prettyPrint(false);
-
-            final StringBuilder listBuilder = new StringBuilder();
-
             final Elements hs = doc.select("h1, h2, h3, h4, h5");
-
             if (hs.size() < 3) {
                 return "";
             }
 
+            final StringBuilder listBuilder = new StringBuilder();
             listBuilder.append("<ul class=\"article-toc\">");
             for (int i = 0; i < hs.size(); i++) {
                 final Element element = hs.get(i);
@@ -2808,7 +2771,6 @@ public class ArticleQueryService {
                 final String id = "toc_" + tagName + "_" + i;
 
                 element.before("<span id='" + id + "'></span>");
-
                 listBuilder.append("<li class='toc-").append(tagName).append("'><a data-id=\"").append(id).append("\" href=\"javascript:Comment._bgFade($('#").append(id).append("'))\">").append(text).append(
                         "</a></li>");
             }

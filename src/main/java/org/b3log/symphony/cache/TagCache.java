@@ -17,45 +17,30 @@
  */
 package org.b3log.symphony.cache;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import org.b3log.latke.ioc.inject.Named;
-import org.b3log.latke.ioc.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
 import org.b3log.latke.Keys;
 import org.b3log.latke.ioc.LatkeBeanManager;
 import org.b3log.latke.ioc.LatkeBeanManagerImpl;
+import org.b3log.latke.ioc.inject.Named;
+import org.b3log.latke.ioc.inject.Singleton;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
-import org.b3log.latke.repository.CompositeFilterOperator;
-import org.b3log.latke.repository.FilterOperator;
-import org.b3log.latke.repository.PropertyFilter;
-import org.b3log.latke.repository.Query;
-import org.b3log.latke.repository.RepositoryException;
-import org.b3log.latke.repository.SortDirection;
-import org.b3log.latke.repository.Transaction;
+import org.b3log.latke.repository.*;
 import org.b3log.latke.util.CollectionUtils;
 import org.b3log.symphony.model.Tag;
 import org.b3log.symphony.repository.TagRepository;
-import org.b3log.symphony.service.ShortLinkQueryService;
 import org.b3log.symphony.util.JSONs;
-import org.b3log.symphony.util.Markdowns;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
-import org.jsoup.Jsoup;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tag cache.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.5.6.1, Mar 28, 2017
+ * @version 1.5.6.3, Jul 23, 2017
  * @since 1.4.0
  */
 @Named
@@ -65,7 +50,7 @@ public class TagCache {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(TagCache.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(TagCache.class);
 
     /**
      * Icon tags.
@@ -99,7 +84,7 @@ public class TagCache {
      * @return tag, returns {@code null} if not found
      */
     public JSONObject getTag(final String id) {
-        final JSONObject tag = (JSONObject) CACHE.get(id);
+        final JSONObject tag = CACHE.get(id);
         if (null == tag) {
             return null;
         }
@@ -128,7 +113,7 @@ public class TagCache {
      * @param id the specified tag id
      */
     public void removeTag(final String id) {
-        final JSONObject tag = (JSONObject) CACHE.get(id);
+        final JSONObject tag = CACHE.get(id);
         if (null == tag) {
             return;
         }
@@ -174,7 +159,7 @@ public class TagCache {
 
         final int end = fetchSize >= ICON_TAGS.size() ? ICON_TAGS.size() : fetchSize;
 
-        return new ArrayList<>(ICON_TAGS.subList(0, end));
+        return new ArrayList(ICON_TAGS.subList(0, end));
     }
 
     /**
@@ -226,7 +211,6 @@ public class TagCache {
     public void loadIconTags() {
         final LatkeBeanManager beanManager = LatkeBeanManagerImpl.getInstance();
         final TagRepository tagRepository = beanManager.getReference(TagRepository.class);
-        final ShortLinkQueryService shortLinkQueryService = beanManager.getReference(ShortLinkQueryService.class);
 
         final Query query = new Query().setFilter(
                 CompositeFilterOperator.and(
@@ -236,7 +220,7 @@ public class TagCache {
                 .addSort(Tag.TAG_RANDOM_DOUBLE, SortDirection.ASCENDING);
         try {
             final JSONObject result = tagRepository.get(query);
-            final List<JSONObject> tags = CollectionUtils.<JSONObject>jsonArrayToList(result.optJSONArray(Keys.RESULTS));
+            final List<JSONObject> tags = CollectionUtils.jsonArrayToList(result.optJSONArray(Keys.RESULTS));
             final List<JSONObject> toUpdateTags = new ArrayList();
             for (final JSONObject tag : tags) {
                 toUpdateTags.add(JSONs.clone(tag));
@@ -275,39 +259,41 @@ public class TagCache {
                 .setCurrentPageNum(1).setPageSize(Integer.MAX_VALUE).setPageCount(1);
         try {
             final JSONObject result = tagRepository.get(query);
-            final List<JSONObject> tags = CollectionUtils.<JSONObject>jsonArrayToList(result.optJSONArray(Keys.RESULTS));
+            final List<JSONObject> tags = CollectionUtils.jsonArrayToList(result.optJSONArray(Keys.RESULTS));
 
             // for legacy data migration
-            final Transaction transaction = tagRepository.beginTransaction();
-            try {
-                for (final JSONObject tag : tags) {
-                    String uri = tag.optString(Tag.TAG_URI);
-                    if (StringUtils.isBlank(uri)) {
-                        final String tagTitle = tag.optString(Tag.TAG_TITLE);
-                        tag.put(Tag.TAG_URI, URLEncoder.encode(tagTitle, "UTF-8"));
-                        tag.put(Tag.TAG_CSS, "");
-
-                        tagRepository.update(tag.optString(Keys.OBJECT_ID), tag);
-
-                        LOGGER.info("Migrated tag [title=" + tagTitle + "]");
-                    }
-                }
-
-                transaction.commit();
-            } catch (final RepositoryException | UnsupportedEncodingException e) {
-                if (transaction.isActive()) {
-                    transaction.rollback();
-                }
-
-                LOGGER.log(Level.ERROR, "Migrates tag data failed", e);
-            }
+//            final Transaction transaction = tagRepository.beginTransaction();
+//            try {
+//                for (final JSONObject tag : tags) {
+//                    String uri = tag.optString(Tag.TAG_URI);
+//                    if (StringUtils.isBlank(uri)) {
+//                        final String tagTitle = tag.optString(Tag.TAG_TITLE);
+//                        tag.put(Tag.TAG_URI, URLEncoder.encode(tagTitle, "UTF-8"));
+//                        tag.put(Tag.TAG_CSS, "");
+//
+//                        tagRepository.update(tag.optString(Keys.OBJECT_ID), tag);
+//
+//                        LOGGER.info("Migrated tag [title=" + tagTitle + "]");
+//                    }
+//                }
+//
+//                transaction.commit();
+//            } catch (final RepositoryException | UnsupportedEncodingException e) {
+//                if (transaction.isActive()) {
+//                    transaction.rollback();
+//                }
+//
+//                LOGGER.log(Level.ERROR, "Migrates tag data failed", e);
+//            }
 
             final Iterator<JSONObject> iterator = tags.iterator();
             while (iterator.hasNext()) {
                 final JSONObject tag = iterator.next();
 
                 String title = tag.optString(Tag.TAG_TITLE);
-                if (StringUtils.contains(title, " ") || StringUtils.contains(title, "　")) { // filter legacy data
+                if ("".equals(title)
+                        || StringUtils.contains(title, " ")
+                        || StringUtils.contains(title, "　")) { // filter legacy data
                     iterator.remove();
 
                     continue;

@@ -17,16 +17,6 @@
  */
 package org.b3log.symphony.model;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
 import org.b3log.latke.ioc.LatkeBeanManager;
 import org.b3log.latke.ioc.LatkeBeanManagerImpl;
@@ -34,17 +24,22 @@ import org.b3log.latke.ioc.Lifecycle;
 import org.b3log.latke.util.Strings;
 import org.b3log.symphony.cache.TagCache;
 import org.b3log.symphony.service.ShortLinkQueryService;
+import org.b3log.symphony.util.Emotions;
 import org.b3log.symphony.util.Markdowns;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
+
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * This class defines tag model relevant keys.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author Bill Ho
- * @version 1.15.6.10, Mar 4, 2017
+ * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
+ * @version 1.17.0.1, Jun 22, 2017
  * @since 0.2.0
  */
 public final class Tag {
@@ -273,7 +268,7 @@ public final class Tag {
     /**
      * Tag title pattern string.
      */
-    public static final String TAG_TITLE_PATTERN_STR = "[\\u4e00-\\u9fa5,\\w,\\s,&,\\+,\\-,\\.]+";
+    public static final String TAG_TITLE_PATTERN_STR = "[\\u4e00-\\u9fa5,\\w,&,\\+,\\-,\\.]+";
 
     /**
      * Tag title pattern.
@@ -287,15 +282,24 @@ public final class Tag {
 
     static {
         NORMALIZE_MAPPINGS.put("JavaScript", new HashSet<>(Arrays.asList("JS")));
-        NORMALIZE_MAPPINGS.put("Elasticsearch", new HashSet<>(Arrays.asList("ES搜索引擎", "ES搜索")));
+        NORMALIZE_MAPPINGS.put("Elasticsearch", new HashSet<>(Arrays.asList("ES搜索引擎", "ES搜索", "ES")));
         NORMALIZE_MAPPINGS.put("golang", new HashSet<>(Arrays.asList("Go", "Go语言")));
+        NORMALIZE_MAPPINGS.put("线程", new HashSet<>(Arrays.asList("多线程", "Thread")));
+        NORMALIZE_MAPPINGS.put("Vue.js", new HashSet<>(Arrays.asList("Vue")));
+        NORMALIZE_MAPPINGS.put("Node.js", new HashSet<>(Arrays.asList("NodeJS")));
+    }
+
+    /**
+     * Private constructor.
+     */
+    private Tag() {
     }
 
     /**
      * Uses the head tags.
      *
      * @param tagStr the specified tags
-     * @param num the specified used number
+     * @param num    the specified used number
      * @return head tags
      */
     public static String useHead(final String tagStr, final int num) {
@@ -315,11 +319,12 @@ public final class Tag {
 
     /**
      * Formats the specified tags.
-     *
+     * <p>
      * <ul>
      * <li>Trims every tag</li>
      * <li>Deduplication</li>
      * </ul>
+     * </p>
      *
      * @param tagStr the specified tags
      * @return formatted tags string
@@ -419,7 +424,7 @@ public final class Tag {
      * Checks the specified title exists in the specified title set.
      *
      * @param titles the specified title set
-     * @param title the specified title to check
+     * @param title  the specified title to check
      * @return {@code true} if exists, returns {@code false} otherwise
      */
     private static boolean exists(final Set<String> titles, final String title) {
@@ -441,14 +446,11 @@ public final class Tag {
     private static String normalize(final String title) {
         final TagCache cache = LatkeBeanManagerImpl.getInstance().getReference(TagCache.class);
         final List<JSONObject> iconTags = cache.getIconTags(Integer.MAX_VALUE);
-        Collections.sort(iconTags, new Comparator<JSONObject>() {
-            @Override
-            public int compare(final JSONObject t1, final JSONObject t2) {
-                final String u1Title = t1.optString(Tag.TAG_T_TITLE_LOWER_CASE);
-                final String u2Title = t2.optString(Tag.TAG_T_TITLE_LOWER_CASE);
+        Collections.sort(iconTags, (t1, t2) -> {
+            final String u1Title = t1.optString(Tag.TAG_T_TITLE_LOWER_CASE);
+            final String u2Title = t2.optString(Tag.TAG_T_TITLE_LOWER_CASE);
 
-                return u2Title.length() - u1Title.length();
-            }
+            return u2Title.length() - u1Title.length();
         });
 
         for (final JSONObject iconTag : iconTags) {
@@ -463,14 +465,11 @@ public final class Tag {
         }
 
         final List<JSONObject> allTags = cache.getTags();
-        Collections.sort(allTags, new Comparator<JSONObject>() {
-            @Override
-            public int compare(final JSONObject t1, final JSONObject t2) {
-                final String u1Title = t1.optString(Tag.TAG_T_TITLE_LOWER_CASE);
-                final String u2Title = t2.optString(Tag.TAG_T_TITLE_LOWER_CASE);
+        Collections.sort(allTags, (t1, t2) -> {
+            final String u1Title = t1.optString(Tag.TAG_T_TITLE_LOWER_CASE);
+            final String u2Title = t2.optString(Tag.TAG_T_TITLE_LOWER_CASE);
 
-                return u2Title.length() - u1Title.length();
-            }
+            return u2Title.length() - u1Title.length();
         });
 
         for (final JSONObject tag : allTags) {
@@ -510,17 +509,12 @@ public final class Tag {
             final ShortLinkQueryService shortLinkQueryService = beanManager.getReference(ShortLinkQueryService.class);
 
             description = shortLinkQueryService.linkTag(description);
+            description = Emotions.convert(description);
             description = Markdowns.toHTML(description);
 
             tag.put(Tag.TAG_DESCRIPTION, description);
             descriptionText = Jsoup.parse(description).text();
         }
         tag.put(Tag.TAG_T_DESCRIPTION_TEXT, descriptionText);
-    }
-
-    /**
-     * Private constructor.
-     */
-    private Tag() {
     }
 }

@@ -17,9 +17,9 @@
  */
 package org.b3log.symphony.service;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.repository.RepositoryException;
@@ -43,7 +43,7 @@ public class LivenessMgmtService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(LivenessMgmtService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(LivenessMgmtService.class);
 
     /**
      * Liveness repository.
@@ -55,7 +55,7 @@ public class LivenessMgmtService {
      * Increments a field of the specified liveness.
      *
      * @param userId the specified user id
-     * @param field the specified field
+     * @param field  the specified field
      */
     @Transactional
     public void incLiveness(final String userId, final String field) {

@@ -19,6 +19,7 @@ package org.b3log.symphony.service;
 
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.User;
@@ -29,6 +30,7 @@ import org.b3log.latke.util.CollectionUtils;
 import org.b3log.latke.util.Strings;
 import org.b3log.symphony.model.Article;
 import org.b3log.symphony.model.Option;
+import org.b3log.symphony.model.Tag;
 import org.b3log.symphony.model.UserExt;
 import org.b3log.symphony.repository.ArticleRepository;
 import org.b3log.symphony.repository.OptionRepository;
@@ -38,14 +40,13 @@ import org.b3log.symphony.util.Symphonys;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import java.util.*;
 
 /**
  * Mail management service.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.0.0.5, Dec 24, 2016
+ * @version 1.0.0.6, Apr 24, 2017
  * @since 1.6.0
  */
 @Service
@@ -54,7 +55,7 @@ public class MailMgmtService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(MailMgmtService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(MailMgmtService.class);
 
     /**
      * User repository.
@@ -178,7 +179,8 @@ public class MailMgmtService {
                     setFilter(CompositeFilterOperator.and(
                             new PropertyFilter(Article.ARTICLE_CREATE_TIME, FilterOperator.GREATER_THAN_OR_EQUAL, sevenDaysAgo),
                             new PropertyFilter(Article.ARTICLE_TYPE, FilterOperator.EQUAL, Article.ARTICLE_TYPE_C_NORMAL),
-                            new PropertyFilter(Article.ARTICLE_STATUS, FilterOperator.EQUAL, Article.ARTICLE_STATUS_C_VALID)
+                            new PropertyFilter(Article.ARTICLE_STATUS, FilterOperator.EQUAL, Article.ARTICLE_STATUS_C_VALID),
+                            new PropertyFilter(Article.ARTICLE_TAGS, FilterOperator.NOT_LIKE, Tag.TAG_TITLE_C_SANDBOX + "%")
                     )).addSort(Article.ARTICLE_COMMENT_CNT, SortDirection.DESCENDING).
                     addSort(Article.REDDIT_SCORE, SortDirection.DESCENDING);
             final List<JSONObject> articles = CollectionUtils.jsonArrayToList(

@@ -18,7 +18,7 @@
 package org.b3log.symphony.processor;
 
 import org.apache.commons.lang.StringUtils;
-import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.servlet.HTTPRequestContext;
 import org.b3log.latke.servlet.HTTPRequestMethod;
 import org.b3log.latke.servlet.annotation.After;
@@ -35,7 +35,6 @@ import org.b3log.symphony.service.DataModelService;
 import org.b3log.symphony.service.ManQueryService;
 import org.json.JSONObject;
 
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
@@ -46,7 +45,7 @@ import java.util.Map;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://vanessa.b3log.org">Liyuan Li</a>
- * @version 1.0.0.3, Mar 29, 2017
+ * @version 1.0.0.4, Jul 3, 2017
  * @since 1.8.0
  */
 @RequestProcessor
@@ -97,7 +96,15 @@ public class ManProcessor {
         dataModelService.fillSideTags(dataModel);
         dataModelService.fillLatestCmts(dataModel);
 
-        final List<JSONObject> mans = manQueryService.getMansByCmdPrefix("man");
+        String cmd = request.getParameter(Common.CMD);
+        if (StringUtils.isBlank(cmd)) {
+            cmd = "man";
+        }
+
+        List<JSONObject> mans = manQueryService.getMansByCmdPrefix(cmd);
+        if (mans.isEmpty()) {
+            mans = manQueryService.getMansByCmdPrefix("man");
+        }
 
         dataModel.put(Common.MANS, mans);
     }

@@ -17,13 +17,9 @@
  */
 package org.b3log.symphony.service;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import org.b3log.latke.ioc.inject.Inject;;
 import org.apache.commons.lang.time.DateUtils;
 import org.b3log.latke.Keys;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.repository.Query;
@@ -39,6 +35,11 @@ import org.b3log.symphony.repository.UserRepository;
 import org.b3log.symphony.util.Symphonys;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
 /**
  * Activity query service.
  *
@@ -52,7 +53,7 @@ public class ActivityQueryService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(ActivityQueryService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ActivityQueryService.class);
 
     /**
      * Pointtransfer repository.
@@ -93,7 +94,7 @@ public class ActivityQueryService {
      * Gets the top eating snake users (single game max) with the specified fetch size.
      *
      * @param avatarViewMode the specified avatar view mode
-     * @param fetchSize the specified fetch size
+     * @param fetchSize      the specified fetch size
      * @return users, returns an empty list if not found
      */
     public List<JSONObject> getTopEatingSnakeUsersMax(final int avatarViewMode, final int fetchSize) {
@@ -130,7 +131,7 @@ public class ActivityQueryService {
      * Gets the top eating snake users (sum) with the specified fetch size.
      *
      * @param avatarViewMode the specified avatar view mode
-     * @param fetchSize the specified fetch size
+     * @param fetchSize      the specified fetch size
      * @return users, returns an empty list if not found
      */
     public List<JSONObject> getTopEatingSnakeUsersSum(final int avatarViewMode, final int fetchSize) {
@@ -167,7 +168,7 @@ public class ActivityQueryService {
      * Gets the top checkin users with the specified fetch size.
      *
      * @param avatarViewMode the specified avatar view mode
-     * @param fetchSize the specified fetch size
+     * @param fetchSize      the specified fetch size
      * @return users, returns an empty list if not found
      */
     public List<JSONObject> getTopCheckinUsers(final int avatarViewMode, final int fetchSize) {

@@ -24,6 +24,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.b3log.latke.Keys;
 import org.b3log.latke.Latkes;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
 import org.b3log.latke.model.User;
@@ -46,7 +47,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.imageio.ImageIO;
-import org.b3log.latke.ioc.inject.Inject;;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -61,7 +61,7 @@ import java.util.regex.Pattern;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author Bill Ho
- * @version 1.15.20.23, Jan 21, 2017
+ * @version 1.15.20.24, Apr 21, 2017
  * @since 0.2.0
  */
 @Service
@@ -70,7 +70,7 @@ public class UserMgmtService {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(UserMgmtService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(UserMgmtService.class);
 
     /**
      * User repository.
@@ -629,14 +629,11 @@ public class UserMgmtService {
 
                 UserQueryService.USER_NAMES.add(u);
 
-                Collections.sort(UserQueryService.USER_NAMES, new Comparator<JSONObject>() {
-                    @Override
-                    public int compare(final JSONObject u1, final JSONObject u2) {
-                        final String u1Name = u1.optString(UserExt.USER_T_NAME_LOWER_CASE);
-                        final String u2Name = u2.optString(UserExt.USER_T_NAME_LOWER_CASE);
+                Collections.sort(UserQueryService.USER_NAMES, (u1, u2) -> {
+                    final String u1Name = u1.optString(UserExt.USER_T_NAME_LOWER_CASE);
+                    final String u2Name = u2.optString(UserExt.USER_T_NAME_LOWER_CASE);
 
-                        return u1Name.compareTo(u2Name);
-                    }
+                    return u1Name.compareTo(u2Name);
                 });
             }
 
@@ -840,7 +837,7 @@ public class UserMgmtService {
 
             if (null == tag) {
                 LOGGER.log(Level.TRACE, "Found a new tag[title={0}] in user [name={1}]",
-                        new Object[]{tagTitle, user.optString(User.USER_NAME)});
+                        tagTitle, user.optString(User.USER_NAME));
                 tag = new JSONObject();
                 tag.put(Tag.TAG_TITLE, tagTitle);
                 String tagURI = tagTitle;

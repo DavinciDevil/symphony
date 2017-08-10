@@ -17,21 +17,22 @@
  */
 package org.b3log.symphony.cache;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import org.b3log.latke.ioc.inject.Inject;;
+import org.b3log.latke.ioc.inject.Inject;
 import org.b3log.latke.ioc.inject.Named;
 import org.b3log.latke.ioc.inject.Singleton;
 import org.b3log.latke.logging.Logger;
 import org.b3log.symphony.service.DomainQueryService;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Domain cache.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.0.2.0, May 15, 2016
+ * @version 1.0.2.1, Apr 26, 2017
  * @since 1.4.0
  */
 @Named
@@ -41,18 +42,18 @@ public class DomainCache {
     /**
      * Logger.
      */
-    private static final Logger LOGGER = Logger.getLogger(DomainCache.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(DomainCache.class);
+
+    /**
+     * Domains.
+     */
+    private static final List<JSONObject> DOMAINS = new ArrayList<>();
 
     /**
      * Domain query service.
      */
     @Inject
     private DomainQueryService domainQueryService;
-
-    /**
-     * Domains.
-     */
-    private static final List<JSONObject> DOMAINS = new ArrayList<JSONObject>();
 
     /**
      * Gets domains with the specified fetch size.
@@ -67,7 +68,7 @@ public class DomainCache {
 
         final int end = fetchSize >= DOMAINS.size() ? DOMAINS.size() : fetchSize;
 
-        return DOMAINS.subList(0, end);
+        return new ArrayList<>(DOMAINS.subList(0, end));
     }
 
     /**
